@@ -1,5 +1,6 @@
 package com.lessask.dongfou;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -21,11 +22,14 @@ import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
 import com.lessask.dongfou.util.DbHelper;
+import com.lessask.dongfou.util.DbInsertListener;
 import com.viewpagerindicator.CirclePageIndicator;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private final int GET_SPORT = 1;
 
     private ArrayList<Sport> sports;
+    private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
 
     @Override
@@ -49,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         sports = new ArrayList<>();
+        sportMap = new HashMap<>();
         sportGathers = new ArrayList<>();
 
         loadDatas();
@@ -75,15 +81,18 @@ public class MainActivity extends AppCompatActivity {
 
         mRecyclerView.addHeaderView(mHeaderView);
         mRecyclerViewAdapter = new SportRecordAdapter(this);
+        mRecyclerViewAdapter.setSportMap(sportMap);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
+        loadSportRecord();
+        DbHelper.getInstance(getBaseContext()).appendInsertListener("t_sport_record", chatRecorInsertListener);
 
         CirclePageIndicator circlePageIndicator = (CirclePageIndicator)mHeaderView.findViewById(R.id.indicator);
         circlePageIndicator.setFillColor(getResources().getColor(R.color.main_color));
         circlePageIndicator.setStrokeColor(getResources().getColor(R.color.gray));
         circlePageIndicator.setViewPager(mViewPager);
 
-        mRecyclerViewAdapter.appendToList(getData());
-        mRecyclerViewAdapter.notifyDataSetChanged();
+        //mRecyclerViewAdapter.appendToList(getData());
+        //mRecyclerViewAdapter.notifyDataSetChanged();
 
         //View mFooterView = LayoutInflater.from(this).inflate(R.layout.layout_footer,mRecyclerView,false);
         //mRecyclerView.addFooterView(mFooterView);
@@ -155,12 +164,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 menu.collapse();
-                switch (sport.getKind()){
+                switch (sport.getKind()) {
                     case 1:
-                        StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this,sport.getName(),sport.getMaxnum(),(int)sport.getAvg(),sport.getUnit(),new StringPickerDialog.OnSelectListener() {
+                        StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), (int) sport.getAvg(), sport.getUnit(), new StringPickerDialog.OnSelectListener() {
                             @Override
                             public void onSelect(int data) {
-                                Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
+                                addSportRecord(sport.getId(), data, 0);
                             }
                         });
                         stringPickerDialog.setEditable(false);
@@ -168,10 +178,11 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 2:
 //public StringPickerTwoDialog(Context context,String title,int maxNumber,int initValue,String unit,int maxNumber2,int initValue2,String uint2, OnSelectListener mSelectCallBack) {
-                        StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this,sport.getName(),sport.getMaxnum(),sport.getLastValue(),sport.getUnit(),sport.getMaxnum2(),sport.getLastValue2(),sport.getUnit2(),new StringPickerTwoDialog.OnSelectListener() {
+                        StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), sport.getLastValue(), sport.getUnit(), sport.getMaxnum2(), sport.getLastValue2(), sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
                             @Override
-                            public void onSelect(int data,int data2) {
-                                Toast.makeText(MainActivity.this, data+", "+data2, Toast.LENGTH_SHORT).show();
+                            public void onSelect(int data, int data2) {
+                                Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
+                                addSportRecord(sport.getId(), data, data2);
                             }
                         });
                         stringPickerTwoDialog.setEditable(false);
@@ -181,6 +192,28 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    private void addSportRecord(int sportid,int data1,int data2){
+        //create table t_sport_record(id int primary key,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
+        ContentValues values = new ContentValues();
+        Sport sport = sportMap.get(sportid);
+        if(sport==null){
+            loadSportFromDb(sportid);
+        }
+        values.put("sportid", sportid);
+        int amount = data1;
+        if(sport.getKind()==2){
+            amount*=data2;
+        }
+        values.put("amount", amount);
+        values.put("arg1", data1);
+        values.put("arg2", data2);
+        values.put("lasttime", new Date().getTime());
+        DbHelper.getInstance(this).insert("t_sport_record", null, values);
+    }
+    private void loadSportFromDb(int sportid){
+
     }
 
     private void loadDatas(){
@@ -195,11 +228,39 @@ public class MainActivity extends AppCompatActivity {
                     ",unit2 text null,maxnum2 int not null,frequency int default 0,total real default 0,avg real not null,days int not null," +
                     "last_time int NOT NULL,seq int not null default 0,lastvalue int default 0,lastvalue2 int default 0)");
                     */
-            sports.add(new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
-            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15)));
+            Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
+            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));
+            sports.add(sport);
+            sportMap.put(sport.getId(),sport);
         }
         cr.close();
+
+
     }
+
+    private void loadSportRecord(){
+
+        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport_record order by lasttime desc", null);
+
+        while (cr.moveToNext()){
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)));
+            mRecyclerViewAdapter.append(sportRecord);
+        }
+        mRecyclerViewAdapter.notifyDataSetChanged();
+        cr.close();
+    }
+
+    private DbInsertListener chatRecorInsertListener = new DbInsertListener() {
+        @Override
+        public void callback(Object obj) {
+            SportRecord sportRecord = (SportRecord)obj;
+            mRecyclerViewAdapter.appendToTop(sportRecord);
+            mRecyclerViewAdapter.notifyItemInserted(0);
+            Log.e(TAG, "insert callback");
+        }
+    };
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -218,13 +279,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private List<SportRecord> getData(){
-        List datas = new ArrayList();
-        for(int i=0;i<100;i++){
-            datas.add(new SportRecord("滑板"+i));
-        }
-        return datas;
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

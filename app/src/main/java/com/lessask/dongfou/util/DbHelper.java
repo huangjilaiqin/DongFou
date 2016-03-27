@@ -7,7 +7,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 
+import com.lessask.dongfou.SportRecord;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,14 +69,13 @@ public class DbHelper {
     public void insert(String table,String nullColumnHack,ContentValues values){
         Object obj=null;
         switch (table){
-            case "t_chatgroup":
+            case "t_sport_record":
+                obj = new SportRecord(0,values.getAsInteger("sportid"),values.getAsFloat("amount"),values.getAsInteger("arg1"),values.getAsInteger("arg2"),0,new Date(values.getAsLong("lasttime")));
                 break;
-
         }
         long rowId = db.insert(table,nullColumnHack,values);
-        /*
-        if(obj instanceof ChatMessage)
-            ((ChatMessage) obj).setId(rowId);
+        if(obj instanceof SportRecord)
+            ((SportRecord) obj).setId((int)rowId);
 
         if(insertCallbacks.containsKey(table)) {
             Log.e(TAG, table + "DbInsertListener size:"+insertCallbacks.get(table).size());
@@ -81,7 +83,6 @@ public class DbHelper {
                 listener.callback(obj);
             }
         }
-        */
     }
     public static boolean isChatgroupExist(String chatgoupId){
         boolean isExist = false;

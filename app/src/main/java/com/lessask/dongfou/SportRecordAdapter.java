@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.util.Map;
+
 
 /**
  * Created by huangji on 2016/2/19.
@@ -21,6 +23,7 @@ import android.widget.TextView;
 public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRecordAdapter.ViewHolder>{
 
     private Context context;
+    private Map<Integer, Sport> sportMap;
     public SportRecordAdapter(Context context) {
         this.context = context;
     }
@@ -31,10 +34,15 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         return new ViewHolder(view);
     }
 
+    public void setSportMap(Map<Integer, Sport> sportMap) {
+        this.sportMap = sportMap;
+    }
+
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
         SportRecord sportRecord = getItem(position);
-        holder.name.setText(sportRecord.getName());
+        Sport sport = sportMap.get(sportRecord.getSportid());
+        holder.name.setText(sport.getName());
         if(position%2==0)
             holder.circle.setBackgroundColor(context.getResources().getColor(R.color.colorAccent));
         else
