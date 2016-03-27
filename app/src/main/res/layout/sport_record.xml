@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    >
+    <LinearLayout
+        android:id="@+id/zhou"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_marginLeft="16dp"
+        >
+        <View
+            android:layout_width="2px"
+            android:layout_height="16dp"
+            android:background="@color/borde_gray"
+            android:layout_gravity="center_horizontal"
+            />
+        <com.lessask.dongfou.CircleView
+            android:id="@+id/circle"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            />
+        <View
+            android:layout_width="2px"
+            android:layout_height="0dp"
+            android:background="@color/borde_gray"
+            android:layout_weight="2"
+            android:layout_gravity="center_horizontal"
+            />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/zhou"
+        android:layout_marginTop="14dp"
+        android:layout_marginLeft="8dp"
+        android:textSize="18sp"
+        android:textColor="@color/black_35"
+        android:text="运动记录"
+        />
+    <TextView
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/name"
+        android:layout_alignLeft="@id/name"
+        android:textSize="14sp"
+        android:text="下午 5:30"
+        />
+
+</RelativeLayout>

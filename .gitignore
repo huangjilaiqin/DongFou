@@ -1,0 +1,15 @@
+#Android Studio项目本地文件
+/.gradle
+/.idea
+*.iml
+local.properties
+
+#编译文件
+build/
+*.apk
+
+#vim缓存文件
+*.swp
+
+#mac平台文件
+.DS_Store
