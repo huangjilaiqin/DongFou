@@ -42,6 +42,26 @@
         android:text="运动记录"
         />
     <TextView
+        android:id="@+id/maohao"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/name"
+        android:layout_alignBottom="@id/name"
+        android:textSize="18sp"
+        android:text=":"
+        />
+    <TextView
+        android:id="@+id/detail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/maohao"
+        android:layout_alignBottom="@id/name"
+        android:layout_marginLeft="8dp"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:text="5公里"
+        />
+    <TextView
         android:id="@+id/time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

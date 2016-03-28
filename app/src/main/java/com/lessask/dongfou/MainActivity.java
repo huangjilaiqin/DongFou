@@ -97,51 +97,6 @@ public class MainActivity extends AppCompatActivity {
         //View mFooterView = LayoutInflater.from(this).inflate(R.layout.layout_footer,mRecyclerView,false);
         //mRecyclerView.addFooterView(mFooterView);
 
-        /*
-        menu = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
-        FloatingActionButton button = (FloatingActionButton) findViewById(R.id.action_a);
-        button.setSize(FloatingActionButton.SIZE_MINI);
-        button.setColorNormalResId(R.color.colorAccent);
-        button.setColorPressedResId(R.color.colorPrimary);
-        button.setIcon(R.drawable.done);
-        button.setStrokeVisible(false);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                menu.collapse();
-                StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this,"跑步",50,6,"公里",new StringPickerDialog.OnSelectListener() {
-                    @Override
-                    public void onSelect(int data) {
-                        Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
-                    }
-                });
-                stringPickerDialog.setEditable(false);
-                stringPickerDialog.show();
-            }
-        });
-        FloatingActionButton buttonb = (FloatingActionButton) findViewById(R.id.action_b);
-        buttonb.setSize(FloatingActionButton.SIZE_MINI);
-        buttonb.setColorNormalResId(R.color.colorAccent);
-        buttonb.setColorPressedResId(R.color.colorPrimary);
-        buttonb.setIcon(R.drawable.done);
-        buttonb.setStrokeVisible(false);
-        buttonb.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                menu.collapse();
-                //Intent intent = new Intent(MainActivity.this, SportsActivity.class);
-                //startActivityForResult(intent, GET_SPORT);
-                StringPickerTwoDialog stringPickerDialog = new StringPickerTwoDialog(MainActivity.this,"负重深蹲",200,20,"次",200,40,"千克/次",new StringPickerTwoDialog.OnSelectListener() {
-                    @Override
-                    public void onSelect(int data,int data2) {
-                        Toast.makeText(MainActivity.this, data+", "+data2, Toast.LENGTH_SHORT).show();
-                    }
-                });
-                stringPickerDialog.setEditable(false);
-                stringPickerDialog.show();
-            }
-        });
-        */
         menu = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
         FloatingActionButton buttona = (FloatingActionButton) findViewById(R.id.action_a);
         initFloatingActionButton(buttona,sports.get(0));
@@ -211,7 +166,31 @@ public class MainActivity extends AppCompatActivity {
         values.put("arg2", data2);
         values.put("lasttime", new Date().getTime());
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
+        frequency,total ,avg ,days,last_time ,seq ,lastvalue,lastvalue2
     }
+
+    private DbInsertListener sportRecordInsertListener = new DbInsertListener() {
+        @Override
+        public void callback(Object obj) {
+            SportRecord sportRecord = (SportRecord) obj;
+            //查询上一次的更新时间
+            Sport sport = loadSport(sportRecord.getSportid());
+            if(sport.getLastTime())
+        }
+    };
+
+    private Sport loadSport(int sportid){
+        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
+        Sport sport=null;
+        while (cr.moveToNext()){
+            sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
+            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));
+        }
+        cr.close();
+        return sport;
+    }
+
     private void loadSportFromDb(int sportid){
 
     }
@@ -234,15 +213,13 @@ public class MainActivity extends AppCompatActivity {
             sportMap.put(sport.getId(),sport);
         }
         cr.close();
-
-
     }
 
     private void loadSportRecord(){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
         Cursor cr = db.rawQuery("select * from t_sport_record order by lasttime desc", null);
-
+        Log.e(TAG, "record size:"+cr.getCount());
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
             SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)));

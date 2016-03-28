@@ -98,7 +98,7 @@ public class StartupActivity extends AppCompatActivity {
         //运动记录
         //arg1: 第一个单位下的数据
         //arg2: 第二个单位下的数据
-        db.execSQL("create table t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
+        db.execSQL("create table t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,lasttime int NOT NULL,seq int not null default 0)");
 
         //db.execSQL("create table t_sport_gather(sportid int primary key,total real not null,avg real not null,times int not null,last_time TIMESTAMP NOT NULL,seq int not null default 0)");
         Log.e(TAG, "create db");

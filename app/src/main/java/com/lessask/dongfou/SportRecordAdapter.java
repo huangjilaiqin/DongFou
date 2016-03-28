@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.lessask.dongfou.util.TimeHelper;
+
 import java.util.Map;
 
 
@@ -43,22 +45,39 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         SportRecord sportRecord = getItem(position);
         Sport sport = sportMap.get(sportRecord.getSportid());
         holder.name.setText(sport.getName());
-        if(position%2==0)
-            holder.circle.setBackgroundColor(context.getResources().getColor(R.color.colorAccent));
-        else
-            holder.circle.setBackgroundColor(context.getResources().getColor(R.color.main_color));
+        StringBuilder detail = new StringBuilder();
+        int kind = sport.getKind();
+        if(kind==1){
+            detail.append(sportRecord.getArg1());
+            detail.append(sport.getUnit());
+        }else if(kind==2){
+            detail.append(sportRecord.getArg1());
+            detail.append(sport.getUnit());
+            detail.append(" ");
+            detail.append(sportRecord.getArg1());
+            detail.append(sport.getUnit2());
+            detail.append("/");
+            detail.append(sport.getUnit());
+        }
+        holder.detail.setText(detail.toString());
+        holder.time.setText(TimeHelper.date2Chat(sportRecord.getTime()));
+        holder.circle.setBackgroundColor(context.getResources().getColor(R.color.colorAccent));
 
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder{
         View itemView;
         TextView name;
+        TextView detail;
+        TextView time;
         CircleView circle;
 
         public ViewHolder(View itemView) {
             super(itemView);
             this.itemView = itemView;
             name = (TextView) itemView.findViewById(R.id.name);
+            detail=(TextView) itemView.findViewById(R.id.detail);
+            time=(TextView)itemView.findViewById(R.id.time);
             circle = (CircleView) itemView.findViewById(R.id.circle);
         }
     }

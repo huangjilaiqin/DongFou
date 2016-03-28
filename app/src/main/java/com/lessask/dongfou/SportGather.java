@@ -1,62 +1,33 @@
 package com.lessask.dongfou;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by JHuang on 2016/3/27.
  */
 public class SportGather {
-    int sportid;
-    float avg;
-    float total;
-    Date lastTime;
-    int seq;
+    private Sport sport;
+    private List<SportRecord> sportRecords;
 
-    public SportGather(int sportid,float total,float avg,Date lastTime, int seq) {
-        this.sportid = sportid;
-        this.avg = avg;
-        this.total = total;
-        this.lastTime = lastTime;
-        this.seq = seq;
+    public SportGather(Sport sport, List<SportRecord> sportRecords) {
+        this.sport = sport;
+        this.sportRecords = sportRecords;
     }
 
-    public int getSportid() {
-        return sportid;
+    public Sport getSport() {
+        return sport;
     }
 
-    public void setSportid(int sportid) {
-        this.sportid = sportid;
+    public void setSport(Sport sport) {
+        this.sport = sport;
     }
 
-    public float getAvg() {
-        return avg;
+    public List<SportRecord> getSportRecords() {
+        return sportRecords;
     }
 
-    public void setAvg(float avg) {
-        this.avg = avg;
-    }
-
-    public float getTotal() {
-        return total;
-    }
-
-    public void setTotal(float total) {
-        this.total = total;
-    }
-
-    public Date getLastTime() {
-        return lastTime;
-    }
-
-    public void setLastTime(Date lastTime) {
-        this.lastTime = lastTime;
-    }
-
-    public int getSeq() {
-        return seq;
-    }
-
-    public void setSeq(int seq) {
-        this.seq = seq;
+    public void setSportRecords(List<SportRecord> sportRecords) {
+        this.sportRecords = sportRecords;
     }
 }
