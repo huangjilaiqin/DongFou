@@ -23,6 +23,7 @@ import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
+import com.lessask.dongfou.util.TimeHelper;
 import com.viewpagerindicator.CirclePageIndicator;
 
 import java.util.ArrayList;
@@ -107,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton buttond = (FloatingActionButton) findViewById(R.id.action_d);
         initFloatingActionButton(buttond,sports.get(3));
 
+        DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
     }
 
     private void initFloatingActionButton(FloatingActionButton button, final Sport sport){
@@ -166,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("arg2", data2);
         values.put("lasttime", new Date().getTime());
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
-        frequency,total ,avg ,days,last_time ,seq ,lastvalue,lastvalue2
+        //frequency,total ,avg ,days,last_time ,seq ,lastvalue,lastvalue2
     }
 
     private DbInsertListener sportRecordInsertListener = new DbInsertListener() {
@@ -175,7 +177,27 @@ public class MainActivity extends AppCompatActivity {
             SportRecord sportRecord = (SportRecord) obj;
             //查询上一次的更新时间
             Sport sport = loadSport(sportRecord.getSportid());
-            if(sport.getLastTime())
+            if(TimeHelper.isSameDay(sport.getLastTime(),sportRecord.getTime()))
+                sport.setDays(sport.getDays()+1);
+            sport.setLastTime(sportRecord.getTime());
+            sport.setFrequency(sport.getFrequency()+1);
+            sport.setTotal(sport.getTotal()+sportRecord.getAmount());
+            sport.setSeq(0);
+            sport.setLastValue(sportRecord.getArg1());
+            sport.setLastValue2(sportRecord.getArg2());
+            //日均
+            sport.setAvg(sport.getTotal()/sport.getDays());
+            Log.e(TAG, "insert record callback,updat sport");
+            ContentValues values = new ContentValues();
+            values.put("total", sport.getTotal());
+            values.put("frequency", sport.getFrequency());
+            values.put("avg", sport.getAvg());
+            values.put("days", sport.getDays());
+            values.put("last_time", sport.getLastTime().getTime());
+            values.put("seq", sport.getSeq());
+            values.put("lastvalue", sport.getLastValue());
+            values.put("lastvalue2", sport.getLastValue2());
+            DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values,"id=?",new String[]{sport.getId()+""});
         }
     };
 
@@ -215,10 +237,25 @@ public class MainActivity extends AppCompatActivity {
         cr.close();
     }
 
+    //过去7天数据汇总
+    private void loadSportRecordById(int sportid){
+
+        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+        Cursor cr = db.rawQuery("select sum(amount) as total from t_sport_record where sportid="+sportid+" and date(lasttime)>date('now','-7 day')", null);
+        Log.e(TAG, "record size:"+cr.getCount());
+        while (cr.moveToNext()){
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)));
+            mRecyclerViewAdapter.append(sportRecord);
+        }
+        mRecyclerViewAdapter.notifyDataSetChanged();
+        cr.close();
+    }
+
     private void loadSportRecord(){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport_record order by lasttime desc", null);
+        Cursor cr = db.rawQuery("select * from t_sport_record where datetime(lasttime)>=datetime('now','-2 day') order by lasttime desc", null);
         Log.e(TAG, "record size:"+cr.getCount());
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
