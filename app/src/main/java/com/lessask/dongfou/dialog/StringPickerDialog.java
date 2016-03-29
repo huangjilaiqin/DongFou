@@ -56,7 +56,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue(initValue);
+        numberPicker.setValue(initValue-1);
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
 
 

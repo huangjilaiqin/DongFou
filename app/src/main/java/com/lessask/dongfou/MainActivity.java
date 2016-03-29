@@ -15,23 +15,29 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
+//import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
 import com.lessask.dongfou.util.TimeHelper;
+import com.oguzdev.circularfloatingactionmenu.library.FloatingActionButton;
+import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
+import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 import com.viewpagerindicator.CirclePageIndicator;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -49,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Sport> sports;
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
+    private ArrayList<FragmentData> fragmentDatas;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,21 +73,20 @@ public class MainActivity extends AppCompatActivity {
         mToolbar.setTitleTextColor(getResources().getColor(R.color.white));
         setSupportActionBar(mToolbar);
 
-
         mRecyclerView = (XRecyclerView) findViewById(R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
 
-
         mFragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager());
+        fragmentDatas = new ArrayList<>();
         for(int i=0;i<5;i++) {
             FragmentData fragmentData = new FragmentData();
             fragmentData.setSportGather(sportGathers.get(i));
             mFragmentPagerAdapter.addFragment(fragmentData, "");
+            fragmentDatas.add(fragmentData);
         }
         mViewPager = (ViewPager)mHeaderView.findViewById(R.id.viewpager);
         mViewPager.setAdapter(mFragmentPagerAdapter);
-
 
         mRecyclerView.addHeaderView(mHeaderView);
         mRecyclerViewAdapter = new SportRecordAdapter(this);
@@ -94,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
         circlePageIndicator.setStrokeColor(getResources().getColor(R.color.gray));
         circlePageIndicator.setViewPager(mViewPager);
 
+        /*
         menu = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
         FloatingActionButton buttona = (FloatingActionButton) findViewById(R.id.action_a);
         initFloatingActionButton(buttona,sports.get(0));
@@ -103,16 +110,57 @@ public class MainActivity extends AppCompatActivity {
         initFloatingActionButton(buttonc,sports.get(2));
         FloatingActionButton buttond = (FloatingActionButton) findViewById(R.id.action_d);
         initFloatingActionButton(buttond,sports.get(3));
+        */
 
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
+
+        initMenu();
+    }
+
+    private void initMenu(){
+        ImageView fabContent = new ImageView(this);
+        fabContent.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
+
+        FloatingActionButton darkButton = new FloatingActionButton.Builder(this)
+                .setTheme(FloatingActionButton.THEME_DARK)
+                .setContentView(fabContent)
+                .setPosition(FloatingActionButton.POSITION_BOTTOM_CENTER)
+                .build();
+
+        SubActionButton.Builder rLSubBuilder = new SubActionButton.Builder(this)
+                .setTheme(SubActionButton.THEME_DARK);
+        ImageView rlIcon1 = new ImageView(this);
+        ImageView rlIcon2 = new ImageView(this);
+        ImageView rlIcon3 = new ImageView(this);
+        ImageView rlIcon4 = new ImageView(this);
+        ImageView rlIcon5 = new ImageView(this);
+
+        rlIcon1.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
+        rlIcon2.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
+        rlIcon3.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
+        rlIcon4.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
+        rlIcon5.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
+
+        // Set 4 SubActionButtons
+        FloatingActionMenu centerBottomMenu = new FloatingActionMenu.Builder(this)
+                .setStartAngle(0)
+                .setEndAngle(-180)
+                .setAnimationHandler(new SlideInAnimationHandler())
+                .addSubActionView(rLSubBuilder.setContentView(rlIcon1).build())
+                .addSubActionView(rLSubBuilder.setContentView(rlIcon2).build())
+                .addSubActionView(rLSubBuilder.setContentView(rlIcon3).build())
+                .addSubActionView(rLSubBuilder.setContentView(rlIcon4).build())
+                .addSubActionView(rLSubBuilder.setContentView(rlIcon5).build())
+                .attachTo(darkButton)
+                .build();
     }
 
     private void initFloatingActionButton(FloatingActionButton button, final Sport sport){
-        button.setSize(FloatingActionButton.SIZE_MINI);
+        //button.setSize(com.android.FloatingActionButton.SIZE_MINI);
         //button.setColorNormalResId(R.color.colorAccent);
         //button.setColorPressedResId(R.color.colorPrimary);
-        button.setIcon(R.drawable.done);
-        button.setStrokeVisible(false);
+        //button.setIcon(R.drawable.done);
+        //button.setStrokeVisible(false);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -150,16 +198,16 @@ public class MainActivity extends AppCompatActivity {
     private void addSportRecord(int sportid,int data1,int data2){
         //create table t_sport_record(id int primary key,amount real not null,int arg1 not null default 0,int arg2 not null default 0,time int NOT NULL,seq int not null default 0)");
         ContentValues values = new ContentValues();
-        Sport sport = sportMap.get(sportid);
-        if(sport==null){
-            loadSportFromDb(sportid);
-        }
+        Sport sport = loadSport(sportid);
+        //Sport sport = sportMap.get(sportid);
+
         values.put("sportid", sportid);
         int amount = data1;
         if(sport.getKind()==2){
             amount*=data2;
         }
         values.put("amount", amount);
+        Log.e(TAG, "amount:"+amount);
         values.put("arg1", data1);
         values.put("arg2", data2);
         values.put("time", new Date().getTime() / 1000);
@@ -216,8 +264,35 @@ public class MainActivity extends AppCompatActivity {
             }else {
                 insertSportMonth(sportRecord);
             }
+
+            updateFragments(sportRecord);
+            mViewPager.setCurrentItem(0);
+            mRecyclerView.scrollToPosition(0);
         }
     };
+
+    private void updateFragments(SportRecord sportRecord){
+        int i=0;
+        for (;i<sportGathers.size();i++){
+            SportGather sportGather = sportGathers.get(i);
+            if(sportGather.getSport().getId()==sportRecord.getSportid()){
+                sportGathers.remove(i);
+                break;
+            }
+        }
+        //不包含的情况
+        if(i==sportGathers.size()){
+            int pos = sportGathers.size()-1;
+            sportGathers.remove(pos);
+        }
+        sportGathers.add(0, loadSportGatherFromDb(sportRecord.getSportid()));
+        //通知fragment更新
+        for(i=0;i<fragmentDatas.size();i++){
+            FragmentData fragmentData = fragmentDatas.get(i);
+            fragmentData.setSportGather(sportGathers.get(i));
+            fragmentData.update();
+        }
+    }
 
     private void insertSportDay(SportRecord record){
         ContentValues values = new ContentValues();
@@ -257,27 +332,33 @@ public class MainActivity extends AppCompatActivity {
         if(sportMap.containsKey(sportid))
             sport = sportMap.get(sportid);
         else {
-            SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-            Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
-            while (cr.moveToNext()) {
-                sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
-                        , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
-            }
-            sportMap.put(sport.getId(),sport);
-            cr.close();
+            sport = loadSportFromDb(sportid);
         }
         return sport;
     }
 
-    private void loadSportFromDb(int sportid){
+    private Sport loadSportFromDb(int sportid){
+        Sport sport = null;
+        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
+        while (cr.moveToNext()) {
+            sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+        }
+        sportMap.put(sport.getId(),sport);
+        cr.close();
+        return sport;
+    }
 
+    private SportGather loadSportGatherFromDb(int sportid){
+        return new SportGather(loadSportFromDb(sportid),loadSportRecordById(sportid));
     }
 
     private void loadDatas(){
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
 
         //id int primary key,name text not null,image text not null,type int not null,unit text not null,unit2 text null,int maxnum not null,frequency int not null default 0)");
-        Cursor cr = db.rawQuery("select * from t_sport order by frequency desc,id limit 5", null);
+        Cursor cr = db.rawQuery("select * from t_sport order by lasttime desc,id limit 5", null);
         while (cr.moveToNext()){
             //int id, String name, String image,int kind,String unit,String unit2,int maxnum,int frequency) {
             /*
@@ -295,28 +376,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //过去7天数据汇总
-    private List<Integer> loadSportRecordById(int sportid){
+    private List<Float> loadSportRecordById(int sportid){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
         Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
         Log.e(TAG, "record size:"+cr.getCount());
-        List<Integer> amounts = new ArrayList<>();
+        List<Float> amounts = new ArrayList<>();
         Date lastTime = TimeHelper.getDateStartOfDay(-6);
         Log.e(TAG, "lasttime: "+lastTime.toString());
         int index=0;
         while (cr.moveToNext()){
-            int amount = cr.getInt(0);
+            float amount = cr.getInt(0);
             Date time = new Date(cr.getLong(1)*1000);
             int deltaDays = TimeHelper.getDateDelta(lastTime,time);
             for(int i=0;i<deltaDays;i++)
-                amounts.add(0);
+                amounts.add(0f);
             amounts.add(amount);
             lastTime=TimeHelper.getDateStartOfDay(time,1);
         }
         cr.close();
         int size = 7-amounts.size();
         for(int i=0;i<size;i++)
-            amounts.add(0);
+            amounts.add(0f);
         StringBuilder builder = new StringBuilder();
         builder.append("sportid:" + sportid + ": ");
         for(int i=0;i<amounts.size();i++)

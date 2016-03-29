@@ -54,7 +54,7 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
             detail.append(sportRecord.getArg1());
             detail.append(sport.getUnit());
             detail.append(" ");
-            detail.append(sportRecord.getArg1());
+            detail.append(sportRecord.getArg2());
             detail.append(sport.getUnit2());
             detail.append("/");
             detail.append(sport.getUnit());

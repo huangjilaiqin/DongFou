@@ -48,7 +48,7 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue(initValue);
+        numberPicker.setValue(initValue-1);
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
         TextView unitView = (TextView)view.findViewById(R.id.unit);
         unitView.setText(unit);
@@ -57,7 +57,7 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         numberPicker2.setDisplayedValues(values2);
         numberPicker2.setMinValue(0);
         numberPicker2.setMaxValue(values2.length - 1);
-        numberPicker2.setValue(initValue2);
+        numberPicker2.setValue(initValue2-1);
         numberPicker2.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
         TextView unitView2 = (TextView)view.findViewById(R.id.unit2);
         unitView2.setText(unit2);

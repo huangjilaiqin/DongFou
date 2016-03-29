@@ -8,6 +8,7 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.Legend;
@@ -22,6 +23,8 @@ import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.lessask.dongfou.util.TimeHelper;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by JHuang on 2016/3/26.
@@ -30,23 +33,82 @@ public class FragmentData extends Fragment{
 
     private View rootView;
     private BarChart mChart;
-    private String[] mWeeks = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "今天"};
+    private TextView sportName;
+    private TextView avg;
+    private TextView unit;
+    private TextView total;
+    private TextView lastTime;
+
+    private String[] mWeeks = new String[]{"", "", "", "", "", "", "今天"};
     private Typeface mTf;
     private SportGather sportGather;
+    private List<Float> sportValues;
+    private Sport sport;
+
 
     public void setSportGather(SportGather sportGather) {
         this.sportGather = sportGather;
-        for(int i=5;i>=0;i--){
-            TimeHelper.getDateStartOfDay(-1);
-            mWeeks[i]=;
+        this.sportValues = sportGather.getSportRecords();
+        this.sport = sportGather.getSport();
+        String last="";
+        for(int i=1;i<7;i++){
+            if(last.length()!=0)
+                mWeeks[6-i]=last+TimeHelper.getWeekNameOfDay(-i);
+            else
+                mWeeks[6-i]=TimeHelper.getWeekNameOfDay(-i);
+            if(mWeeks[6-i].equals("周一"))
+                last="上";
         }
     }
+
+    public void update(){
+        //fragment未初始化
+        if(sportName==null)
+            return;
+        sportName.setText(sport.getName());
+        avg.setText(sport.getAvg()+"");
+        if(sport.getKind()==1)
+            unit.setText(sport.getUnit());
+        else if(sport.getKind()==2)
+            unit.setText(sport.getUnit2());
+
+        total.setText(sport.getTotal()+"");
+        if(!sport.getLastTime().equals(new Date(0)))
+            lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
+        else
+            lastTime.setText("无运动记录");
+        setData(7);
+
+    }
+
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         if(rootView==null){
             rootView = inflater.inflate(R.layout.fragment_data, container,false);
+
+            sportName = (TextView)rootView.findViewById(R.id.sport_name);
+            avg = (TextView)rootView.findViewById(R.id.avg);
+            unit = (TextView)rootView.findViewById(R.id.unit);
+            total = (TextView)rootView.findViewById(R.id.total);
+            lastTime = (TextView)rootView.findViewById(R.id.last_time);
+
+            /*
+            sportName.setText(sport.getName());
+            avg.setText(sport.getAvg()+"");
+            if(sport.getKind()==1)
+                unit.setText(sport.getUnit());
+            else if(sport.getKind()==2)
+                unit.setText(sport.getUnit2());
+
+            total.setText(sport.getTotal()+"");
+            if(!sport.getLastTime().equals(new Date(0)))
+                lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
+            else
+                lastTime.setText("无运动记录");
+                */
+
 
             mChart = (BarChart) rootView.findViewById(R.id.chart);
 
@@ -128,12 +190,13 @@ public class FragmentData extends Fragment{
             l.setXEntrySpace(4f);
             */
 
-            setData(7, 50);
+            //setData(7);
+            update();
         }
         return rootView;
     }
 
-    private void setData(int count, float range) {
+    private void setData(int count) {
 
         ArrayList<String> xVals = new ArrayList<String>();
         for (int i = 0; i < count; i++) {
@@ -143,8 +206,7 @@ public class FragmentData extends Fragment{
         ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
 
         for (int i = 0; i < count; i++) {
-            float mult = (range + 1);
-            float val = (float) (Math.random() * mult);
+            float val = sportValues.get(i);
             yVals1.add(new BarEntry(val, i));
         }
 

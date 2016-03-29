@@ -8,9 +8,9 @@ import java.util.List;
  */
 public class SportGather {
     private Sport sport;
-    private List<Integer> amounts;
+    private List<Float> amounts;
 
-    public SportGather(Sport sport, List<Integer> amounts) {
+    public SportGather(Sport sport, List<Float> amounts) {
         this.sport = sport;
         this.amounts= amounts;
     }
@@ -23,11 +23,11 @@ public class SportGather {
         this.sport = sport;
     }
 
-    public List<Integer> getSportRecords() {
+    public List<Float> getSportRecords() {
         return amounts;
     }
 
-    public void setSportRecords(List<Integer> amounts) {
+    public void setSportRecords(List<Float> amounts) {
         this.amounts= amounts;
     }
 }
