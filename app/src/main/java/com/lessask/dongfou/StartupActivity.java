@@ -89,18 +89,22 @@ public class StartupActivity extends AppCompatActivity {
         //运动汇总
         //total:总数
         //avg:日均
-        //last_time:最后一次运动时间
+        //lasttime:最后一次运动时间
         //times:总运动天数
         //seq:服务器同步状态, 0表示未同步, 1:表示已同步
         db.execSQL("create table t_sport(id int primary key,name text not null,image text not null,kind int not null,unit text not null,maxnum int not null" +
-                    ",unit2 text null,maxnum2 int not null,frequency int default 0,total real default 0,avg real default 0,days int default 0," +
-                    "last_time int,seq int default 0,lastvalue int default 0,lastvalue2 int default 0)");
+                    ",unit2 text null,maxnum2 int null,frequency int default 0,total real default 0,avg real default 0,days int default 0," +
+                    "lasttime int default 0,seq int default 0,lastvalue int default 0,lastvalue2 int default 0)");
         //运动记录
         //arg1: 第一个单位下的数据
         //arg2: 第二个单位下的数据
-        db.execSQL("create table t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,lasttime int NOT NULL,seq int not null default 0)");
+        //详细运动记录
+        db.execSQL("create table t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
+        //每天的汇总表
+        db.execSQL("create table t_sport_record_day(id int primary key,sportid int not null,amount real not null,time int NOT NULL,seq int not null default 0)");
+        //每月的汇总表
+        db.execSQL("create table t_sport_record_month(id int primary key,sportid int not null,amount real not null,time int NOT NULL,seq int not null default 0)");
 
-        //db.execSQL("create table t_sport_gather(sportid int primary key,total real not null,avg real not null,times int not null,last_time TIMESTAMP NOT NULL,seq int not null default 0)");
         Log.e(TAG, "create db");
 
         editor.putBoolean("initDb", true);

@@ -27,6 +27,7 @@ import com.lessask.dongfou.util.TimeHelper;
 import com.viewpagerindicator.CirclePageIndicator;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -71,11 +72,12 @@ public class MainActivity extends AppCompatActivity {
         View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
 
 
-        FragmentData fragmentData = new FragmentData();
-        FragmentData fragmentData1 = new FragmentData();
         mFragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager());
-        mFragmentPagerAdapter.addFragment(fragmentData, "动态");
-        mFragmentPagerAdapter.addFragment(fragmentData1, "训练");
+        for(int i=0;i<5;i++) {
+            FragmentData fragmentData = new FragmentData();
+            fragmentData.setSportGather(sportGathers.get(i));
+            mFragmentPagerAdapter.addFragment(fragmentData, "");
+        }
         mViewPager = (ViewPager)mHeaderView.findViewById(R.id.viewpager);
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
@@ -91,12 +93,6 @@ public class MainActivity extends AppCompatActivity {
         circlePageIndicator.setFillColor(getResources().getColor(R.color.main_color));
         circlePageIndicator.setStrokeColor(getResources().getColor(R.color.gray));
         circlePageIndicator.setViewPager(mViewPager);
-
-        //mRecyclerViewAdapter.appendToList(getData());
-        //mRecyclerViewAdapter.notifyDataSetChanged();
-
-        //View mFooterView = LayoutInflater.from(this).inflate(R.layout.layout_footer,mRecyclerView,false);
-        //mRecyclerView.addFooterView(mFooterView);
 
         menu = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
         FloatingActionButton buttona = (FloatingActionButton) findViewById(R.id.action_a);
@@ -152,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addSportRecord(int sportid,int data1,int data2){
-        //create table t_sport_record(id int primary key,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
+        //create table t_sport_record(id int primary key,amount real not null,int arg1 not null default 0,int arg2 not null default 0,time int NOT NULL,seq int not null default 0)");
         ContentValues values = new ContentValues();
         Sport sport = sportMap.get(sportid);
         if(sport==null){
@@ -166,9 +162,8 @@ public class MainActivity extends AppCompatActivity {
         values.put("amount", amount);
         values.put("arg1", data1);
         values.put("arg2", data2);
-        values.put("lasttime", new Date().getTime());
+        values.put("time", new Date().getTime() / 1000);
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
-        //frequency,total ,avg ,days,last_time ,seq ,lastvalue,lastvalue2
     }
 
     private DbInsertListener sportRecordInsertListener = new DbInsertListener() {
@@ -177,8 +172,20 @@ public class MainActivity extends AppCompatActivity {
             SportRecord sportRecord = (SportRecord) obj;
             //查询上一次的更新时间
             Sport sport = loadSport(sportRecord.getSportid());
-            if(TimeHelper.isSameDay(sport.getLastTime(),sportRecord.getTime()))
-                sport.setDays(sport.getDays()+1);
+            boolean isSameDay = true;
+            boolean isSameMonth = true;
+            if(sport.getLastTime().equals(new Date(0))){
+                isSameDay=false;
+                isSameMonth=false;
+            }
+
+            if(!TimeHelper.isSameDay(sport.getLastTime(),sportRecord.getTime())) {
+                sport.setDays(sport.getDays() + 1);
+                isSameDay=false;
+            }
+            if(!TimeHelper.isSameMonth(sport.getLastTime(),sportRecord.getTime()))
+                isSameMonth=false;
+
             sport.setLastTime(sportRecord.getTime());
             sport.setFrequency(sport.getFrequency()+1);
             sport.setTotal(sport.getTotal()+sportRecord.getAmount());
@@ -193,23 +200,72 @@ public class MainActivity extends AppCompatActivity {
             values.put("frequency", sport.getFrequency());
             values.put("avg", sport.getAvg());
             values.put("days", sport.getDays());
-            values.put("last_time", sport.getLastTime().getTime());
+            values.put("lasttime", sport.getLastTime().getTime()/1000);
             values.put("seq", sport.getSeq());
             values.put("lastvalue", sport.getLastValue());
             values.put("lastvalue2", sport.getLastValue2());
             DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values,"id=?",new String[]{sport.getId()+""});
+
+            if(isSameDay){
+                updateSportDay(sportRecord);
+            }else {
+                insertSportDay(sportRecord);
+            }
+            if(isSameMonth){
+                updateSportMonth(sportRecord);
+            }else {
+                insertSportMonth(sportRecord);
+            }
         }
     };
 
+    private void insertSportDay(SportRecord record){
+        ContentValues values = new ContentValues();
+        values.put("sportid", record.getSportid());
+        values.put("amount", record.getAmount());
+        //自1970年后的秒数
+        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
+        Log.e(TAG, "insertSportDay:"+time);
+        values.put("time", time);
+        DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
+    }
+    private void updateSportDay(SportRecord record){
+        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
+        Log.e(TAG, "updateSportDay:" + time);
+        String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time;
+        DbHelper.getInstance(this).getDb().execSQL(sql);
+    }
+
+    private void insertSportMonth(SportRecord record){
+        ContentValues values = new ContentValues();
+        values.put("sportid", record.getSportid());
+        values.put("amount", record.getAmount());
+        long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
+        Log.e(TAG, "insertSportMonth:"+time);
+        values.put("time", time);
+        DbHelper.getInstance(this).insert("t_sport_record_month", null, values);
+    }
+    private void updateSportMonth(SportRecord record){
+        long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
+        Log.e(TAG, "updateSportMonth:"+time);
+        String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time;
+        DbHelper.getInstance(this).getDb().execSQL(sql);
+    }
+
     private Sport loadSport(int sportid){
-        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
-        Sport sport=null;
-        while (cr.moveToNext()){
-            sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
-            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));
+        Sport sport = null;
+        if(sportMap.containsKey(sportid))
+            sport = sportMap.get(sportid);
+        else {
+            SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+            Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
+            while (cr.moveToNext()) {
+                sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
+                        , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+            }
+            sportMap.put(sport.getId(),sport);
+            cr.close();
         }
-        cr.close();
         return sport;
     }
 
@@ -227,39 +283,56 @@ public class MainActivity extends AppCompatActivity {
             /*
             db.execSQL("create table t_sport(id int primary key,name text not null,image text not null,kind int not null,unit text not null,maxnum int not null" +
                     ",unit2 text null,maxnum2 int not null,frequency int default 0,total real default 0,avg real not null,days int not null," +
-                    "last_time int NOT NULL,seq int not null default 0,lastvalue int default 0,lastvalue2 int default 0)");
+                    "lasttime int NOT NULL,seq int not null default 0,lastvalue int default 0,lastvalue2 int default 0)");
                     */
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
-            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));
+            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
             sports.add(sport);
-            sportMap.put(sport.getId(),sport);
+            sportMap.put(sport.getId(), sport);
+            sportGathers.add(new SportGather(sport,loadSportRecordById(sport.getId())));
         }
         cr.close();
     }
 
     //过去7天数据汇总
-    private void loadSportRecordById(int sportid){
+    private List<Integer> loadSportRecordById(int sportid){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select sum(amount) as total from t_sport_record where sportid="+sportid+" and date(lasttime)>date('now','-7 day')", null);
+        Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
         Log.e(TAG, "record size:"+cr.getCount());
+        List<Integer> amounts = new ArrayList<>();
+        Date lastTime = TimeHelper.getDateStartOfDay(-6);
+        Log.e(TAG, "lasttime: "+lastTime.toString());
+        int index=0;
         while (cr.moveToNext()){
-            //t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)));
-            mRecyclerViewAdapter.append(sportRecord);
+            int amount = cr.getInt(0);
+            Date time = new Date(cr.getLong(1)*1000);
+            int deltaDays = TimeHelper.getDateDelta(lastTime,time);
+            for(int i=0;i<deltaDays;i++)
+                amounts.add(0);
+            amounts.add(amount);
+            lastTime=TimeHelper.getDateStartOfDay(time,1);
         }
-        mRecyclerViewAdapter.notifyDataSetChanged();
         cr.close();
+        int size = 7-amounts.size();
+        for(int i=0;i<size;i++)
+            amounts.add(0);
+        StringBuilder builder = new StringBuilder();
+        builder.append("sportid:" + sportid + ": ");
+        for(int i=0;i<amounts.size();i++)
+            builder.append(amounts.get(i)+",");
+        Log.e(TAG, builder.toString());
+        return amounts;
     }
 
     private void loadSportRecord(){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport_record where datetime(lasttime)>=datetime('now','-2 day') order by lasttime desc", null);
+        Cursor cr = db.rawQuery("select * from t_sport_record where datetime(time)>=datetime('now') order by time desc", null);
         Log.e(TAG, "record size:"+cr.getCount());
         while (cr.moveToNext()){
-            //t_sport_record(id int primary key,sportid int not null,amount real not null,int arg1 not null default 0,int arg2 not null default 0,lasttime int NOT NULL,seq int not null default 0)");
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)));
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000));
             mRecyclerViewAdapter.append(sportRecord);
         }
         mRecyclerViewAdapter.notifyDataSetChanged();

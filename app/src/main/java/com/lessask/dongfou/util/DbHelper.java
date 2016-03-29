@@ -70,7 +70,7 @@ public class DbHelper {
         Object obj=null;
         switch (table){
             case "t_sport_record":
-                obj = new SportRecord(0,values.getAsInteger("sportid"),values.getAsFloat("amount"),values.getAsInteger("arg1"),values.getAsInteger("arg2"),0,new Date(values.getAsLong("lasttime")));
+                obj = new SportRecord(0,values.getAsInteger("sportid"),values.getAsFloat("amount"),values.getAsInteger("arg1"),values.getAsInteger("arg2"),0,new Date(values.getAsLong("time")*1000));
                 break;
         }
         long rowId = db.insert(table,nullColumnHack,values);

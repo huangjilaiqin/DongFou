@@ -19,6 +19,7 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
+import com.lessask.dongfou.util.TimeHelper;
 
 import java.util.ArrayList;
 
@@ -29,8 +30,18 @@ public class FragmentData extends Fragment{
 
     private View rootView;
     private BarChart mChart;
-    private String[] mWeeks = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+    private String[] mWeeks = new String[]{"周一", "周二", "周三", "周四", "周五", "周六", "今天"};
     private Typeface mTf;
+    private SportGather sportGather;
+
+    public void setSportGather(SportGather sportGather) {
+        this.sportGather = sportGather;
+        for(int i=5;i>=0;i--){
+            TimeHelper.getDateStartOfDay(-1);
+            mWeeks[i]=;
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {

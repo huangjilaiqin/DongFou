@@ -13,6 +13,7 @@ import com.google.gson.JsonParseException;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
@@ -227,7 +228,82 @@ public class TimeHelper {
         else
             return false;
     }
+    public static boolean isSameMonth(Date d1,Date d2){
+        if(d1.getYear()==d2.getYear() && d1.getMonth()==d2.getMonth())
+            return true;
+        else
+            return false;
+    }
 
+    public static Date getDateStartOfMonth(){
+        Calendar calendar = Calendar.getInstance();
+        System.out.println(calendar.getTime());
+        calendar.set(Calendar.DATE,1);
+        calendar.set(Calendar.HOUR_OF_DAY,0);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
+    }
 
+    public static Date getDateStartOfDay(){
+        Calendar calendar = Calendar.getInstance();
+        System.out.println(calendar.getTime());
+        calendar.set(Calendar.HOUR_OF_DAY,0);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
+    }
+    public static Date getDateStartOfDay(int delta){
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, delta);
+        calendar.set(Calendar.HOUR_OF_DAY,0);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
+    }
 
+    public static Date getDateStartOfDay(Date date,int delta){
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.DAY_OF_YEAR, delta);
+        return calendar.getTime();
+    }
+
+    public static int getDateDelta(Date date1, Date date2) {
+        Calendar calst = Calendar.getInstance();
+        Calendar caled = Calendar.getInstance();
+
+        calst.setTime(date1);
+        caled.setTime(date2);
+
+         //设置时间为0时
+         calst.set(Calendar.HOUR_OF_DAY, 0);
+         calst.set(Calendar.MINUTE, 0);
+         calst.set(Calendar.SECOND, 0);
+         calst.set(Calendar.MILLISECOND, 0);
+
+         caled.set(Calendar.HOUR_OF_DAY, 0);
+         caled.set(Calendar.MINUTE, 0);
+         caled.set(Calendar.SECOND, 0);
+         caled.set(Calendar.MILLISECOND, 0);
+        //得到两个日期相差的天数
+         int days = ((int)(caled.getTime().getTime()/1000)-(int)(calst.getTime().getTime()/1000))/3600/24;
+
+        return days;
+    }
+
+    public static int getWeekOfDay(int delta){
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, delta);
+        return calendar.get(Calendar.DAY_OF_WEEK);
+    }
+    private static String[] weekNames = new String[]{"","周日","周一","周二","周三","周四","周五","周六"};
+    public static String getWeekNameOfDay(int delta){
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, delta);
+        return weekNames[calendar.get(Calendar.DAY_OF_WEEK)];
+    }
 }

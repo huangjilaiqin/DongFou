@@ -8,11 +8,11 @@ import java.util.List;
  */
 public class SportGather {
     private Sport sport;
-    private List<SportRecord> sportRecords;
+    private List<Integer> amounts;
 
-    public SportGather(Sport sport, List<SportRecord> sportRecords) {
+    public SportGather(Sport sport, List<Integer> amounts) {
         this.sport = sport;
-        this.sportRecords = sportRecords;
+        this.amounts= amounts;
     }
 
     public Sport getSport() {
@@ -23,11 +23,11 @@ public class SportGather {
         this.sport = sport;
     }
 
-    public List<SportRecord> getSportRecords() {
-        return sportRecords;
+    public List<Integer> getSportRecords() {
+        return amounts;
     }
 
-    public void setSportRecords(List<SportRecord> sportRecords) {
-        this.sportRecords = sportRecords;
+    public void setSportRecords(List<Integer> amounts) {
+        this.amounts= amounts;
     }
 }
