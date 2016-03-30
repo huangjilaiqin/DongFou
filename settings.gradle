@@ -1,2 +1,3 @@
 include ':app'
 include ':viewPagerIndicator'
+include ':arcMenu'

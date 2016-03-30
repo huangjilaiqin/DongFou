@@ -19,9 +19,12 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 //import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.android.volley.toolbox.ImageLoader;
+import com.capricorn.ArcMenu;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
+import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
 import com.lessask.dongfou.util.TimeHelper;
@@ -46,8 +49,8 @@ public class MainActivity extends AppCompatActivity {
 
     private FragmentPagerAdapter mFragmentPagerAdapter;
     private ViewPager mViewPager;
-    private TabLayout mTabLayout;
     private FloatingActionsMenu menu;
+    private ArcMenu arcMenu;
 
     private final String TAG = MainActivity.class.getSimpleName();
     private final int GET_SPORT = 1;
@@ -100,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
         circlePageIndicator.setStrokeColor(getResources().getColor(R.color.gray));
         circlePageIndicator.setViewPager(mViewPager);
 
+        arcMenu = (ArcMenu) findViewById(R.id.arc_menu);
         /*
         menu = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
         FloatingActionButton buttona = (FloatingActionButton) findViewById(R.id.action_a);
@@ -113,11 +117,11 @@ public class MainActivity extends AppCompatActivity {
         */
 
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
-
         initMenu();
     }
 
     private void initMenu(){
+        /*
         ImageView fabContent = new ImageView(this);
         fabContent.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
 
@@ -153,6 +157,49 @@ public class MainActivity extends AppCompatActivity {
                 .addSubActionView(rLSubBuilder.setContentView(rlIcon5).build())
                 .attachTo(darkButton)
                 .build();
+                */
+
+        for (int i = 0; i < 5; i++) {
+            ImageView item = new ImageView(this);
+            //item.setImageResource(R.drawable.button_action);
+            final Sport sport = sports.get(i);
+            String headImgUrl = Config.imagePrefix+sport.getImage();
+            ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(item, 0, 0);
+            VolleyHelper.getInstance().getImageLoader().get(headImgUrl, headImgListener, 100, 100);
+
+            final int position = i;
+            arcMenu.addItem(item, new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(MainActivity.this, "position:" + position, Toast.LENGTH_SHORT).show();
+                    switch (sport.getKind()) {
+                        case 1:
+                            StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), (int) sport.getAvg(), sport.getUnit(), new StringPickerDialog.OnSelectListener() {
+                                @Override
+                                public void onSelect(int data) {
+                                    //Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
+                                    addSportRecord(sport.getId(), data, 0);
+                                }
+                            });
+                            stringPickerDialog.setEditable(false);
+                            stringPickerDialog.show();
+                            break;
+                        case 2:
+    //public StringPickerTwoDialog(Context context,String title,int maxNumber,int initValue,String unit,int maxNumber2,int initValue2,String uint2, OnSelectListener mSelectCallBack) {
+                            StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), sport.getLastValue(), sport.getUnit(), sport.getMaxnum2(), sport.getLastValue2(), sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
+                                @Override
+                                public void onSelect(int data, int data2) {
+                                    Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
+                                    addSportRecord(sport.getId(), data, data2);
+                                }
+                            });
+                            stringPickerTwoDialog.setEditable(false);
+                            stringPickerTwoDialog.show();
+                            break;
+                        }
+                }
+            });
+        }
     }
 
     private void initFloatingActionButton(FloatingActionButton button, final Sport sport){
