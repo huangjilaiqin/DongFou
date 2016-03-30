@@ -36,4 +36,5 @@ dependencies {
     compile 'com.github.PhilJay:MPAndroidChart:v2.2.3'
     compile 'de.hdodenhof:circleimageview:2.0.0'
     compile 'com.oguzdev:CircularFloatingActionMenu:1.0.2'
+    compile 'de.hdodenhof:circleimageview:2.0.0'
 }

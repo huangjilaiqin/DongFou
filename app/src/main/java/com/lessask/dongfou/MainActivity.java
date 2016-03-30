@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import de.hdodenhof.circleimageview.CircleImageView;
+
 public class MainActivity extends AppCompatActivity {
 
     private XRecyclerView mRecyclerView;
@@ -159,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
                 .build();
                 */
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             ImageView item = new ImageView(this);
             //item.setImageResource(R.drawable.button_action);
             final Sport sport = sports.get(i);
@@ -200,6 +202,19 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+        ImageView item = new ImageView(this);
+        //item.setImageResource(R.drawable.button_action);
+        String headImgUrl = Config.imagePrefix+"more.png";
+        ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(item, 0, 0);
+        VolleyHelper.getInstance().getImageLoader().get(headImgUrl, headImgListener, 100, 100);
+
+        arcMenu.addItem(item, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SportsActivity.class);
+                startActivityForResult(intent,GET_SPORT);
+            }
+        });
     }
 
     private void initFloatingActionButton(FloatingActionButton button, final Sport sport){
