@@ -37,4 +37,5 @@ dependencies {
     compile 'de.hdodenhof:circleimageview:2.0.0'
     compile 'com.oguzdev:CircularFloatingActionMenu:1.0.2'
     compile 'de.hdodenhof:circleimageview:2.0.0'
+    compile 'com.inthecheesefactory.thecheeselibrary:stated-fragment-support-v4:0.9.1'
 }

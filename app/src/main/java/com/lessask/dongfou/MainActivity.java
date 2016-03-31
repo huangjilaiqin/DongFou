@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PersistableBundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -81,8 +82,25 @@ public class MainActivity extends AppCompatActivity {
     };
 
     @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        Log.e(TAG, "onRestoreInstanceState:"+outState);
+        super.onSaveInstanceState(outState, outPersistentState);
+        outState.putInt("test", 1);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState, PersistableBundle persistentState) {
+        Log.e(TAG, "onRestoreInstanceState test:"+savedInstanceState.getInt("test",-1));
+        super.onRestoreInstanceState(savedInstanceState, persistentState);
+        for (int i=0;i<fragmentDatas.size();i++){
+            fragmentDatas.get(i).setSportGather(sportGathers.get(i));
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.e(TAG, "oncreate savedInstanceState:"+savedInstanceState);
         setContentView(R.layout.activity_main);
 
         sports = new ArrayList<>();

@@ -5,6 +5,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,8 +21,11 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
+import com.inthecheesefactory.thecheeselibrary.fragment.support.v4.app.StatedFragment;
+import com.lessask.dongfou.util.DbDeleteListener;
 import com.lessask.dongfou.util.TimeHelper;
 
+import java.awt.font.TextAttribute;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -29,8 +33,9 @@ import java.util.List;
 /**
  * Created by JHuang on 2016/3/26.
  */
-public class FragmentData extends Fragment{
+public class FragmentData extends Fragment {
 
+    private String TAG = FragmentData.class.getSimpleName();
     private View rootView;
     private BarChart mChart;
     private TextView sportName;
@@ -41,6 +46,7 @@ public class FragmentData extends Fragment{
 
     private String[] mWeeks = new String[]{"", "", "", "", "", "", "今天"};
     private Typeface mTf;
+    private int sportid;
     private SportGather sportGather;
     private List<Float> sportValues;
     private Sport sport;
@@ -50,6 +56,7 @@ public class FragmentData extends Fragment{
         this.sportGather = sportGather;
         this.sportValues = sportGather.getSportRecords();
         this.sport = sportGather.getSport();
+        this.sportid=sport.getId();
         String last="";
         for(int i=1;i<7;i++){
             if(last.length()!=0)
@@ -62,6 +69,8 @@ public class FragmentData extends Fragment{
     }
 
     public void update(){
+        if(sport==null || sportValues==null)
+            loadData();
         //fragment未初始化
         if(sportName==null)
             return;
@@ -81,10 +90,64 @@ public class FragmentData extends Fragment{
 
     }
 
+    /*
+    @Override
+    protected void onSaveState(Bundle outState) {
+        super.onSaveState(outState);
+        outState.putInt("sportid", sport.getId());
+    }
+
+    @Override
+    protected void onRestoreState(Bundle savedInstanceState) {
+        super.onRestoreState(savedInstanceState);
+        if(savedInstanceState!=null) {
+            sportid = savedInstanceState.getInt("sportid");
+        }else
+            Log.e(TAG, "sportid:" + sportid);
+    }
+    */
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putInt("sportid", sport.getId());
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if(savedInstanceState!=null) {
+            sportid = savedInstanceState.getInt("sportid");
+            Log.e(TAG, "sportid:"+sportid);
+        }else {
+            Log.e(TAG, "savedInstanceState is null");
+        }
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        if(savedInstanceState!=null) {
+            sportid = savedInstanceState.getInt("sportid");
+            Log.e(TAG, "sportid:"+sportid);
+        }else {
+            Log.e(TAG, "savedInstanceState is null");
+        }
+    }
+
+    private void loadData(){
+        Log.e(TAG, "loadData");
+        sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
+        sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
+    }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        if(savedInstanceState!=null){
+            sportid = savedInstanceState.getInt("sportid");
+            Log.e(TAG, "sportid:"+sportid);
+        }
         if(rootView==null){
             rootView = inflater.inflate(R.layout.fragment_data, container,false);
 
@@ -191,8 +254,8 @@ public class FragmentData extends Fragment{
             */
 
             //setData(7);
-            update();
         }
+        update();
         return rootView;
     }
 

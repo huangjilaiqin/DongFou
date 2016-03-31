@@ -304,7 +304,7 @@ public class TimeHelper {
     public static String getWeekNameOfDay(int delta){
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_YEAR, delta);
-        Log.e(TAG, "getWeekNameOfDay:"+calendar.getTime());
+        //Log.e(TAG, "getWeekNameOfDay:"+calendar.getTime());
         return weekNames[calendar.get(Calendar.DAY_OF_WEEK)];
     }
 }
