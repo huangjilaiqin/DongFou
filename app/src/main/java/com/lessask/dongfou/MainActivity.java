@@ -4,6 +4,8 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -56,11 +58,27 @@ public class MainActivity extends AppCompatActivity {
 
     private final String TAG = MainActivity.class.getSimpleName();
     private final int GET_SPORT = 1;
+    private final int ADD_SPORT = 2;
 
     private ArrayList<Sport> sports;
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
     private ArrayList<FragmentData> fragmentDatas;
+    private ArrayList<ImageView> menuImages;
+
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what){
+                case ADD_SPORT:
+                    SportRecord sportRecord = (SportRecord)msg.obj;
+                    updateFragments(sportRecord);
+                    mViewPager.setCurrentItem(0);
+                    mRecyclerView.scrollToPosition(0);
+                    break;
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         sports = new ArrayList<>();
         sportMap = new HashMap<>();
         sportGathers = new ArrayList<>();
+        menuImages = new ArrayList<>();
 
         loadDatas();
 
@@ -81,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView = (XRecyclerView) findViewById(R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
+        View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
 
         mFragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager());
         fragmentDatas = new ArrayList<>();
@@ -94,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
         mRecyclerView.addHeaderView(mHeaderView);
+        mRecyclerView.addFooterView(footView);
         mRecyclerViewAdapter = new SportRecordAdapter(this);
         mRecyclerViewAdapter.setSportMap(sportMap);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
@@ -123,46 +144,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initMenu(){
-        /*
-        ImageView fabContent = new ImageView(this);
-        fabContent.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
-
-        FloatingActionButton darkButton = new FloatingActionButton.Builder(this)
-                .setTheme(FloatingActionButton.THEME_DARK)
-                .setContentView(fabContent)
-                .setPosition(FloatingActionButton.POSITION_BOTTOM_CENTER)
-                .build();
-
-        SubActionButton.Builder rLSubBuilder = new SubActionButton.Builder(this)
-                .setTheme(SubActionButton.THEME_DARK);
-        ImageView rlIcon1 = new ImageView(this);
-        ImageView rlIcon2 = new ImageView(this);
-        ImageView rlIcon3 = new ImageView(this);
-        ImageView rlIcon4 = new ImageView(this);
-        ImageView rlIcon5 = new ImageView(this);
-
-        rlIcon1.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
-        rlIcon2.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
-        rlIcon3.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
-        rlIcon4.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
-        rlIcon5.setImageDrawable(getResources().getDrawable(R.drawable.button_action));
-
-        // Set 4 SubActionButtons
-        FloatingActionMenu centerBottomMenu = new FloatingActionMenu.Builder(this)
-                .setStartAngle(0)
-                .setEndAngle(-180)
-                .setAnimationHandler(new SlideInAnimationHandler())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon1).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon2).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon3).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon4).build())
-                .addSubActionView(rLSubBuilder.setContentView(rlIcon5).build())
-                .attachTo(darkButton)
-                .build();
-                */
-
         for (int i = 0; i < 4; i++) {
             ImageView item = new ImageView(this);
+            menuImages.add(item);
             //item.setImageResource(R.drawable.button_action);
             final Sport sport = sports.get(i);
             String headImgUrl = Config.imagePrefix+sport.getImage();
@@ -173,32 +157,8 @@ public class MainActivity extends AppCompatActivity {
             arcMenu.addItem(item, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Toast.makeText(MainActivity.this, "position:" + position, Toast.LENGTH_SHORT).show();
-                    switch (sport.getKind()) {
-                        case 1:
-                            StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), (int) sport.getAvg(), sport.getUnit(), new StringPickerDialog.OnSelectListener() {
-                                @Override
-                                public void onSelect(int data) {
-                                    //Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
-                                    addSportRecord(sport.getId(), data, 0);
-                                }
-                            });
-                            stringPickerDialog.setEditable(false);
-                            stringPickerDialog.show();
-                            break;
-                        case 2:
-    //public StringPickerTwoDialog(Context context,String title,int maxNumber,int initValue,String unit,int maxNumber2,int initValue2,String uint2, OnSelectListener mSelectCallBack) {
-                            StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), sport.getLastValue(), sport.getUnit(), sport.getMaxnum2(), sport.getLastValue2(), sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
-                                @Override
-                                public void onSelect(int data, int data2) {
-                                    Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
-                                    addSportRecord(sport.getId(), data, data2);
-                                }
-                            });
-                            stringPickerTwoDialog.setEditable(false);
-                            stringPickerTwoDialog.show();
-                            break;
-                        }
+                    //Toast.makeText(MainActivity.this, "position:" + position, Toast.LENGTH_SHORT).show();
+                    showDataDialog(sports.get(position));
                 }
             });
         }
@@ -215,6 +175,44 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent,GET_SPORT);
             }
         });
+    }
+
+    private void showDataDialog(final Sport sport){
+        int lastV,lastV2;
+        switch (sport.getKind()) {
+            case 1:
+                lastV = sport.getLastValue();
+                if(lastV==0)
+                    lastV = 1;
+                StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(),lastV, sport.getUnit(), new StringPickerDialog.OnSelectListener() {
+                    @Override
+                    public void onSelect(int data) {
+                        //Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
+                        addSportRecord(sport.getId(), data, 0);
+                    }
+                });
+                stringPickerDialog.setEditable(false);
+                stringPickerDialog.show();
+                break;
+            case 2:
+//public StringPickerTwoDialog(Context context,String title,int maxNumber,int initValue,String unit,int maxNumber2,int initValue2,String uint2, OnSelectListener mSelectCallBack) {
+                lastV = sport.getLastValue();
+                lastV2 = sport.getLastValue2();
+                if(lastV==0)
+                    lastV = 1;
+                if(lastV2==0)
+                    lastV2 = 1;
+                StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(),lastV, sport.getUnit(), sport.getMaxnum2(),lastV2, sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
+                    @Override
+                    public void onSelect(int data, int data2) {
+                        Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
+                        addSportRecord(sport.getId(), data, data2);
+                    }
+                });
+                stringPickerTwoDialog.setEditable(false);
+                stringPickerTwoDialog.show();
+                break;
+        }
     }
 
     private void initFloatingActionButton(FloatingActionButton button, final Sport sport){
@@ -327,9 +325,11 @@ public class MainActivity extends AppCompatActivity {
                 insertSportMonth(sportRecord);
             }
 
-            updateFragments(sportRecord);
-            mViewPager.setCurrentItem(0);
-            mRecyclerView.scrollToPosition(0);
+            Message message = new Message();
+            message.what=ADD_SPORT;
+            message.obj = sportRecord;
+            handler.sendMessage(message);
+
         }
     };
 
@@ -354,6 +354,10 @@ public class MainActivity extends AppCompatActivity {
             fragmentData.setSportGather(sportGathers.get(i));
             fragmentData.update();
         }
+    }
+
+    private void updateMenu(){
+
     }
 
     private void insertSportDay(SportRecord record){
@@ -501,6 +505,7 @@ public class MainActivity extends AppCompatActivity {
                 case GET_SPORT:
                     int sportid = data.getIntExtra("sportid", -1);
                     Log.e(TAG, "sportid:" + sportid);
+                    showDataDialog(loadSport(sportid));
                     break;
                 default:
                     Log.e(TAG, "not match requestCode:"+requestCode);

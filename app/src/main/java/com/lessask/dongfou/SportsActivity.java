@@ -36,7 +36,7 @@ public class SportsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sports);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("通讯录");
+        toolbar.setTitle("选择运动");
         toolbar.setTitleTextColor(getResources().getColor(R.color.white));
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
@@ -83,7 +83,7 @@ public class SportsActivity extends AppCompatActivity {
     private void loadSports(){
         mRecyclerView.showLoadingView();
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport", null);
+        Cursor cr = db.rawQuery("select * from t_sport order by frequency desc,lasttime desc;", null);
         while (cr.moveToNext()){
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));

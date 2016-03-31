@@ -7,12 +7,13 @@
         android:id="@+id/zhou"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:layout_centerInParent="true"
         android:orientation="vertical"
-        android:layout_marginLeft="16dp"
         >
         <View
             android:layout_width="2px"
-            android:layout_height="16dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:background="@color/borde_gray"
             android:layout_gravity="center_horizontal"
             />
@@ -25,7 +26,7 @@
             android:layout_width="2px"
             android:layout_height="0dp"
             android:background="@color/borde_gray"
-            android:layout_weight="2"
+            android:layout_weight="1"
             android:layout_gravity="center_horizontal"
             />
     </LinearLayout>
@@ -34,41 +35,33 @@
         android:id="@+id/name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/zhou"
-        android:layout_marginTop="14dp"
-        android:layout_marginLeft="8dp"
+        android:layout_toLeftOf="@id/zhou"
+        android:layout_marginRight="8dp"
+        android:layout_centerVertical="true"
         android:textSize="18sp"
         android:textColor="@color/black_35"
-        android:text="运动记录"
-        />
-    <TextView
-        android:id="@+id/maohao"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/name"
-        android:layout_alignBottom="@id/name"
-        android:textSize="18sp"
-        android:text=":"
-        />
-    <TextView
-        android:id="@+id/detail"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/maohao"
-        android:layout_alignBottom="@id/name"
-        android:layout_marginLeft="8dp"
-        android:textSize="18sp"
-        android:textColor="@color/black"
-        android:text="5公里"
+        android:text="跑步"
         />
     <TextView
         android:id="@+id/time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/name"
-        android:layout_alignLeft="@id/name"
+        android:layout_alignRight="@id/name"
         android:textSize="14sp"
         android:text="下午 5:30"
         />
+    <TextView
+        android:id="@+id/detail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/zhou"
+        android:layout_marginLeft="8dp"
+        android:layout_centerVertical="true"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:text="5公里"
+        />
+
 
 </RelativeLayout>
