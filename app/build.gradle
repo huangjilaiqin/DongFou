@@ -1,9 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        dongfou {
+            keyAlias 'dongfou'
+            keyPassword '19910725'
+            storePassword '19910725'
+        }
+    }
     compileSdkVersion 23
     buildToolsVersion "23.0.1"
-
     defaultConfig {
         applicationId "com.lessask.dongfou"
         minSdkVersion 15
@@ -15,6 +21,10 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.dongfou
+        }
+        debug {
+            signingConfig signingConfigs.dongfou
         }
     }
 }
@@ -25,8 +35,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
     compile 'com.android.support:recyclerview-v7:23.1.1'
-
-
     compile 'io.socket:socket.io-client:0.6.1'
     compile 'com.google.code.gson:gson:2.2.2'
     compile files('libs/volley.jar')
