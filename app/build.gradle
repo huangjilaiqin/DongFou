@@ -5,6 +5,7 @@ android {
         dongfou {
             keyAlias 'dongfou'
             keyPassword '19910725'
+            storeFile file('dongfou.jks')
             storePassword '19910725'
         }
     }
