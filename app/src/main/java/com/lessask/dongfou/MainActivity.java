@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.e(TAG, "oncreate savedInstanceState:"+savedInstanceState);
+        Log.e(TAG, "oncreate savedInstanceState:" + savedInstanceState);
         setContentView(R.layout.activity_main);
 
         sports = new ArrayList<>();
@@ -117,21 +117,28 @@ public class MainActivity extends AppCompatActivity {
 
         mRecyclerView = (XRecyclerView) findViewById(R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
+        //View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
         View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
 
         mFragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager());
         fragmentDatas = new ArrayList<>();
         for(int i=0;i<5;i++) {
             FragmentData fragmentData = new FragmentData();
+            Bundle bundle = new Bundle();
+            bundle.putInt("sportid", sportGathers.get(i).getSport().getId());
+            fragmentData.setArguments(bundle);
+            Log.e(TAG, ""+sportGathers.get(i).getSport());
             fragmentData.setSportGather(sportGathers.get(i));
+            fragmentData.setSportid(sportGathers.get(i).getSport().getId());
             mFragmentPagerAdapter.addFragment(fragmentData, "");
             fragmentDatas.add(fragmentData);
+            Log.e(TAG, "new fragment"+i);
         }
-        mViewPager = (ViewPager)mHeaderView.findViewById(R.id.viewpager);
+        //mViewPager = (ViewPager)mHeaderView.findViewById(R.id.viewpager);
+        mViewPager = (ViewPager)findViewById(R.id.viewpager);
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
-        mRecyclerView.addHeaderView(mHeaderView);
+        //mRecyclerView.addHeaderView(mHeaderView);
         mRecyclerView.addFooterView(footView);
         mRecyclerViewAdapter = new SportRecordAdapter(this);
         mRecyclerViewAdapter.setSportMap(sportMap);
@@ -139,7 +146,8 @@ public class MainActivity extends AppCompatActivity {
         loadSportRecord();
         DbHelper.getInstance(getBaseContext()).appendInsertListener("t_sport_record", chatRecorInsertListener);
 
-        CirclePageIndicator circlePageIndicator = (CirclePageIndicator)mHeaderView.findViewById(R.id.indicator);
+        //CirclePageIndicator circlePageIndicator = (CirclePageIndicator)mHeaderView.findViewById(R.id.indicator);
+        CirclePageIndicator circlePageIndicator = (CirclePageIndicator)findViewById(R.id.indicator);
         circlePageIndicator.setFillColor(getResources().getColor(R.color.main_color));
         circlePageIndicator.setStrokeColor(getResources().getColor(R.color.gray));
         circlePageIndicator.setViewPager(mViewPager);
@@ -543,8 +551,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()){
-            case R.id.me:
-                break;
             case R.id.setting:
                 break;
         }

@@ -51,12 +51,18 @@ public class FragmentData extends Fragment {
     private List<Float> sportValues;
     private Sport sport;
 
+    public void setSportid(int sportid) {
+        this.sportid = sportid;
+        Log.e(TAG, "set sportid:"+sportid);
+        Log.e(TAG, "setSportid:"+this);
+    }
 
     public void setSportGather(SportGather sportGather) {
         this.sportGather = sportGather;
         this.sportValues = sportGather.getSportRecords();
         this.sport = sportGather.getSport();
         this.sportid=sport.getId();
+        Log.e(TAG, "setSportGather:" + this.sportid);
         String last="";
         for(int i=1;i<7;i++){
             if(last.length()!=0)
@@ -69,9 +75,8 @@ public class FragmentData extends Fragment {
     }
 
     public void update(){
-        if(sport==null || sportValues==null)
-            loadData();
-        //fragment未初始化
+
+        //如果fragment为初始化不进行更新
         if(sportName==null)
             return;
         sportName.setText(sport.getName());
@@ -81,7 +86,7 @@ public class FragmentData extends Fragment {
         else if(sport.getKind()==2)
             unit.setText(sport.getUnit2());
 
-        total.setText(sport.getTotal()+"");
+        total.setText(sport.getTotal() + "");
         if(!sport.getLastTime().equals(new Date(0)))
             lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
         else
@@ -107,51 +112,18 @@ public class FragmentData extends Fragment {
     }
     */
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putInt("sportid", sport.getId());
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-        super.onViewStateRestored(savedInstanceState);
-        if(savedInstanceState!=null) {
-            sportid = savedInstanceState.getInt("sportid");
-            Log.e(TAG, "sportid:"+sportid);
-        }else {
-            Log.e(TAG, "savedInstanceState is null");
-        }
-    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+
+        Log.e(TAG, "onActivityCreated:"+savedInstanceState);
         super.onActivityCreated(savedInstanceState);
-        if(savedInstanceState!=null) {
-            sportid = savedInstanceState.getInt("sportid");
-            Log.e(TAG, "sportid:"+sportid);
-        }else {
-            Log.e(TAG, "savedInstanceState is null");
-        }
-    }
+        Bundle bundle = getArguments();
+        Log.e(TAG, "bundle sport:"+bundle.getInt("sportid"));
+        sportid = bundle.getInt("sportid");
+        loadData();
 
-    private void loadData(){
-        Log.e(TAG, "loadData");
-        sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
-        sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        if(savedInstanceState!=null){
-            sportid = savedInstanceState.getInt("sportid");
-            Log.e(TAG, "sportid:"+sportid);
-        }
-        if(rootView==null){
-            rootView = inflater.inflate(R.layout.fragment_data, container,false);
-
-            sportName = (TextView)rootView.findViewById(R.id.sport_name);
+        sportName = (TextView)rootView.findViewById(R.id.sport_name);
             avg = (TextView)rootView.findViewById(R.id.avg);
             unit = (TextView)rootView.findViewById(R.id.unit);
             total = (TextView)rootView.findViewById(R.id.total);
@@ -254,8 +226,21 @@ public class FragmentData extends Fragment {
             */
 
             //setData(7);
-        }
         update();
+    }
+
+    private void loadData(){
+        sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
+        Log.e(TAG, "loadData sportid:"+sportid);
+        Log.e(TAG, "loadData sport"+sport.getName());
+        sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.e(TAG, "onCreateView:"+savedInstanceState);
+        rootView = inflater.inflate(R.layout.fragment_data, container,false);
         return rootView;
     }
 

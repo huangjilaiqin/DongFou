@@ -2,13 +2,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".MainActivity">
-    <item android:id="@+id/me"
-        android:title="我"
+    <item android:id="@+id/sync"
+        android:title="同步"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_sync"
+        />
+    <item android:id="@+id/feedback"
+        android:title="反馈"
+        android:icon="@drawable/ic_feedback"
         android:orderInCategory="80"
         app:showAsAction="never"
         />
     <item android:id="@+id/setting"
         android:title="设置"
+        android:icon="@drawable/ic_settings"
         android:orderInCategory="80"
         app:showAsAction="never"
         />
