@@ -57,7 +57,7 @@ public class CircleView extends View {
         // TODO Auto-generated method stub
         canvas.setDrawFilter(pfd);
         canvas.drawCircle(getWidth() / 2, getHeight() / 2, Math.max(getWidth(), getHeight()) / 2, mBgPaint);
-        Log.e(CircleView.class.getSimpleName(), "draw circle");
+        //Log.e(CircleView.class.getSimpleName(), "draw circle");
         super.draw(canvas);
     }
 }

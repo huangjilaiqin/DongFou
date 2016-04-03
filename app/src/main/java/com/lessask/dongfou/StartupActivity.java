@@ -139,7 +139,7 @@ public class StartupActivity extends AppCompatActivity {
                         values.put("maxnum", sport.getMaxnum());
                         values.put("unit2", sport.getUnit2());
                         values.put("maxnum2", sport.getMaxnum2());
-                        values.put("frequency", sport.getFrequency());
+                        //values.put("frequency", sport.getFrequency());
 
                         Cursor cr = db.rawQuery("select 1 from t_sport where id="+sport.getId(),null);
                         if(cr.getCount()==0) {

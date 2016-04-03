@@ -43,7 +43,8 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
         SportRecord sportRecord = getItem(position);
-        Sport sport = sportMap.get(sportRecord.getSportid());
+        //Sport sport = sportMap.get(sportRecord.getSportid());
+        Sport sport = DbDataHelper.loadSportFromDb(context, sportRecord.getSportid());
         holder.name.setText(sport.getName());
         StringBuilder detail = new StringBuilder();
         int kind = sport.getKind();

@@ -52,7 +52,7 @@ public class SportsActivity extends AppCompatActivity {
         mSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(SportsActivity.this, "search", Toast.LENGTH_SHORT).show();
+                Toast.makeText(SportsActivity.this, "该版本暂时不支持搜索", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -83,7 +83,8 @@ public class SportsActivity extends AppCompatActivity {
     private void loadSports(){
         mRecyclerView.showLoadingView();
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport order by frequency desc,lasttime desc;", null);
+        Cursor cr = db.rawQuery("select * from t_sport order by `frequency` desc,`lasttime` desc", null);
+        //select name,frequency,lasttime from t_sport order by `frequency` desc,`lasttime` desc;
         while (cr.moveToNext()){
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));

@@ -60,6 +60,11 @@ public class FragmentData extends Fragment {
     public void setSportGather(SportGather sportGather) {
         this.sportGather = sportGather;
         this.sportValues = sportGather.getSportRecords();
+        StringBuilder builder = new StringBuilder();
+        for(int i=0;i<this.sportValues.size();i++)
+            builder.append(this.sportValues.get(i)+",");
+        Log.e(TAG, "setSportGather:"+builder.toString());
+
         this.sport = sportGather.getSport();
         this.sportid=sport.getId();
         Log.e(TAG, "setSportGather:" + this.sportid);
@@ -72,13 +77,21 @@ public class FragmentData extends Fragment {
             if(mWeeks[6-i].equals("周一"))
                 last="上";
         }
+        if(sportName==null)
+            Log.e(TAG, "set data sportname is null");
+        else {
+            Log.e(TAG, "set data sportname is not null:"+sport.getTotal());
+            total.setText(sport.getTotal()+"");
+        }
     }
 
     public void update(){
 
         //如果fragment为初始化不进行更新
-        if(sportName==null)
+        if(sportName==null) {
+            Log.e(TAG, "sportName is null");
             return;
+        }
         sportName.setText(sport.getName());
         avg.setText(sport.getAvg()+"");
         if(sport.getKind()==1)
@@ -93,6 +106,7 @@ public class FragmentData extends Fragment {
             lastTime.setText("无运动记录");
         setData(7);
 
+        Log.e(TAG, "fragment update");
     }
 
     /*
@@ -122,8 +136,17 @@ public class FragmentData extends Fragment {
         Log.e(TAG, "bundle sport:"+bundle.getInt("sportid"));
         sportid = bundle.getInt("sportid");
         loadData();
-
+        if(sportName==null){
+            Log.e(TAG, "aaa sportName is null fuck");
+        }else {
+            Log.e(TAG, "aaa sportName is not null");
+        }
         sportName = (TextView)rootView.findViewById(R.id.sport_name);
+        if(sportName==null){
+            Log.e(TAG, "sportName is null fuck");
+        }else {
+            Log.e(TAG, "sportName is not null");
+        }
             avg = (TextView)rootView.findViewById(R.id.avg);
             unit = (TextView)rootView.findViewById(R.id.unit);
             total = (TextView)rootView.findViewById(R.id.total);
@@ -230,10 +253,11 @@ public class FragmentData extends Fragment {
     }
 
     private void loadData(){
-        sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
-        Log.e(TAG, "loadData sportid:"+sportid);
-        Log.e(TAG, "loadData sport"+sport.getName());
-        sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
+        if(sport==null || sportValues==null) {
+            Log.e(TAG, "load data");
+            sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
+            sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
+        }
     }
 
     @Nullable
@@ -241,6 +265,7 @@ public class FragmentData extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         Log.e(TAG, "onCreateView:"+savedInstanceState);
         rootView = inflater.inflate(R.layout.fragment_data, container,false);
+
         return rootView;
     }
 
@@ -257,11 +282,16 @@ public class FragmentData extends Fragment {
             float val = sportValues.get(i);
             yVals1.add(new BarEntry(val, i));
         }
+        StringBuilder builder = new StringBuilder();
+        for(int i=0;i<sportValues.size();i++)
+            builder.append(sportValues.get(i)+",");
+        Log.e(TAG, builder.toString());
 
         BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
         set1.setLabel("跑步");
         set1.setLabel("");
-        set1.setColor(getResources().getColor(R.color.colorAccent));
+        if(isAdded())
+            set1.setColor(getResources().getColor(R.color.colorAccent));
         set1.setBarSpacePercent(35f);
 
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
@@ -272,5 +302,8 @@ public class FragmentData extends Fragment {
         //data.setValueTypeface(mTf);
 
         mChart.setData(data);
+        //mChart.animate();
+        //mChart.animateX(1000);
+        mChart.animateY(1000);
     }
 }

@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.PersistableBundle;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -64,8 +65,9 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Sport> sports;
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
-    private ArrayList<FragmentData> fragmentDatas;
+    private ArrayList<Fragment> fragmentDatas;
     private ArrayList<ImageView> menuImages;
+    private Bundle fragmentBundle = new Bundle();
 
     private Handler handler = new Handler(){
         @Override
@@ -80,22 +82,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-
-    @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        Log.e(TAG, "onRestoreInstanceState:"+outState);
-        super.onSaveInstanceState(outState, outPersistentState);
-        outState.putInt("test", 1);
-    }
-
-    @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState, PersistableBundle persistentState) {
-        Log.e(TAG, "onRestoreInstanceState test:"+savedInstanceState.getInt("test",-1));
-        super.onRestoreInstanceState(savedInstanceState, persistentState);
-        for (int i=0;i<fragmentDatas.size();i++){
-            fragmentDatas.get(i).setSportGather(sportGathers.get(i));
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,13 +113,14 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = new Bundle();
             bundle.putInt("sportid", sportGathers.get(i).getSport().getId());
             fragmentData.setArguments(bundle);
-            Log.e(TAG, ""+sportGathers.get(i).getSport());
-            fragmentData.setSportGather(sportGathers.get(i));
-            fragmentData.setSportid(sportGathers.get(i).getSport().getId());
-            mFragmentPagerAdapter.addFragment(fragmentData, "");
+            //fragmentData.setSportGather(sportGathers.get(i));
+            //fragmentData.setSportid(sportGathers.get(i).getSport().getId());
+            //mFragmentPagerAdapter.addFragment(fragmentData, "");
             fragmentDatas.add(fragmentData);
-            Log.e(TAG, "new fragment"+i);
+            Log.e(TAG, "add fragment:"+fragmentData);
         }
+        mFragmentPagerAdapter.setSportGathers(sportGathers);
+        mFragmentPagerAdapter.setFragments(fragmentDatas);
         //mViewPager = (ViewPager)mHeaderView.findViewById(R.id.viewpager);
         mViewPager = (ViewPager)findViewById(R.id.viewpager);
         mViewPager.setAdapter(mFragmentPagerAdapter);
@@ -169,6 +156,13 @@ public class MainActivity extends AppCompatActivity {
         initMenu();
     }
 
+    @Override
+    protected void onDestroy() {
+        DbHelper.getInstance(this).removeInsertListener("t_sport_record", sportRecordInsertListener);
+        Log.e(TAG, "onDestroy");
+        super.onDestroy();
+    }
+
     private void initMenu(){
         for (int i = 0; i < 4; i++) {
             ImageView item = new ImageView(this);
@@ -184,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     //Toast.makeText(MainActivity.this, "position:" + position, Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "add sport:"+sports.get(position).getName());
                     showDataDialog(sports.get(position));
                 }
             });
@@ -231,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
                 StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(),lastV, sport.getUnit(), sport.getMaxnum2(),lastV2, sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
                     @Override
                     public void onSelect(int data, int data2) {
-                        Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
                         addSportRecord(sport.getId(), data, data2);
                     }
                 });
@@ -239,46 +234,6 @@ public class MainActivity extends AppCompatActivity {
                 stringPickerTwoDialog.show();
                 break;
         }
-    }
-
-    private void initFloatingActionButton(FloatingActionButton button, final Sport sport){
-        //button.setSize(com.android.FloatingActionButton.SIZE_MINI);
-        //button.setColorNormalResId(R.color.colorAccent);
-        //button.setColorPressedResId(R.color.colorPrimary);
-        //button.setIcon(R.drawable.done);
-        //button.setStrokeVisible(false);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                menu.collapse();
-                switch (sport.getKind()) {
-                    case 1:
-                        StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), (int) sport.getAvg(), sport.getUnit(), new StringPickerDialog.OnSelectListener() {
-                            @Override
-                            public void onSelect(int data) {
-                                //Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
-                                addSportRecord(sport.getId(), data, 0);
-                            }
-                        });
-                        stringPickerDialog.setEditable(false);
-                        stringPickerDialog.show();
-                        break;
-                    case 2:
-//public StringPickerTwoDialog(Context context,String title,int maxNumber,int initValue,String unit,int maxNumber2,int initValue2,String uint2, OnSelectListener mSelectCallBack) {
-                        StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(), sport.getLastValue(), sport.getUnit(), sport.getMaxnum2(), sport.getLastValue2(), sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
-                            @Override
-                            public void onSelect(int data, int data2) {
-                                Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
-                                addSportRecord(sport.getId(), data, data2);
-                            }
-                        });
-                        stringPickerTwoDialog.setEditable(false);
-                        stringPickerTwoDialog.show();
-                        break;
-                }
-
-            }
-        });
     }
 
     private void addSportRecord(int sportid,int data1,int data2){
@@ -360,6 +315,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void updateFragments(SportRecord sportRecord){
+        Log.e(TAG, "updateFragments");
         int i=0;
         for (;i<sportGathers.size();i++){
             SportGather sportGather = sportGathers.get(i);
@@ -368,7 +324,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-        //不包含的情况
+        //不包含的情况，移除最后一项
         if(i==sportGathers.size()){
             int pos = sportGathers.size()-1;
             sportGathers.remove(pos);
@@ -376,10 +332,15 @@ public class MainActivity extends AppCompatActivity {
         sportGathers.add(0, loadSportGatherFromDb(sportRecord.getSportid()));
         //通知fragment更新
         for(i=0;i<fragmentDatas.size();i++){
-            FragmentData fragmentData = fragmentDatas.get(i);
+            FragmentData fragmentData = (FragmentData) fragmentDatas.get(i);
             fragmentData.setSportGather(sportGathers.get(i));
+            Log.e(TAG, "total:"+sportGathers.get(i).getSport().getTotal());
             fragmentData.update();
+            Log.e(TAG, "update fragment:"+fragmentData);
         }
+
+        mFragmentPagerAdapter.setFragments(fragmentDatas);
+        mFragmentPagerAdapter.notifyDataSetChanged();
     }
 
     private void updateMenu(){
@@ -392,13 +353,11 @@ public class MainActivity extends AppCompatActivity {
         values.put("amount", record.getAmount());
         //自1970年后的秒数
         long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
-        Log.e(TAG, "insertSportDay:"+time);
         values.put("time", time);
         DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
     }
     private void updateSportDay(SportRecord record){
         long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
-        Log.e(TAG, "updateSportDay:" + time);
         String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time;
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
@@ -408,13 +367,11 @@ public class MainActivity extends AppCompatActivity {
         values.put("sportid", record.getSportid());
         values.put("amount", record.getAmount());
         long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
-        Log.e(TAG, "insertSportMonth:"+time);
         values.put("time", time);
         DbHelper.getInstance(this).insert("t_sport_record_month", null, values);
     }
     private void updateSportMonth(SportRecord record){
         long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
-        Log.e(TAG, "updateSportMonth:"+time);
         String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time;
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
@@ -472,10 +429,8 @@ public class MainActivity extends AppCompatActivity {
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
         Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
-        Log.e(TAG, "record size:"+cr.getCount());
         List<Float> amounts = new ArrayList<>();
         Date lastTime = TimeHelper.getDateStartOfDay(-6);
-        Log.e(TAG, "lasttime: "+lastTime.toString());
         int index=0;
         while (cr.moveToNext()){
             float amount = cr.getInt(0);
@@ -491,10 +446,12 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<size;i++)
             amounts.add(0f);
         StringBuilder builder = new StringBuilder();
+        /*
         builder.append("sportid:" + sportid + ": ");
         for(int i=0;i<amounts.size();i++)
             builder.append(amounts.get(i)+",");
         Log.e(TAG, builder.toString());
+        */
         return amounts;
     }
 
@@ -502,7 +459,6 @@ public class MainActivity extends AppCompatActivity {
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
         Cursor cr = db.rawQuery("select * from t_sport_record where datetime(time)>=datetime('now') order by time desc", null);
-        Log.e(TAG, "record size:"+cr.getCount());
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
             SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000));
@@ -518,23 +474,19 @@ public class MainActivity extends AppCompatActivity {
             SportRecord sportRecord = (SportRecord)obj;
             mRecyclerViewAdapter.appendToTop(sportRecord);
             mRecyclerViewAdapter.notifyItemInserted(0);
-            Log.e(TAG, "insert callback");
         }
     };
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.e(TAG, "onActivityResult requestCode:" + requestCode + " resultCode:" + resultCode);
         if(resultCode==RESULT_OK) {
             switch (requestCode) {
                 case GET_SPORT:
                     int sportid = data.getIntExtra("sportid", -1);
-                    Log.e(TAG, "sportid:" + sportid);
                     showDataDialog(loadSport(sportid));
                     break;
                 default:
-                    Log.e(TAG, "not match requestCode:"+requestCode);
                     break;
             }
         }
@@ -551,6 +503,9 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()){
+            case R.id.sync:
+                Toast.makeText(this, "该版本暂时不能同步",Toast.LENGTH_SHORT).show();
+                break;
             case R.id.setting:
                 break;
         }
