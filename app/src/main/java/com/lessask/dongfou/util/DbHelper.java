@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 
@@ -17,7 +18,7 @@ import java.util.Map;
 /**
  * Created by laiqin on 16/2/29.
  */
-public class DbHelper {
+public class DbHelper extends SQLiteOpenHelper{
 
     private String TAG = DbHelper.class.getSimpleName();
     private static Context context;
@@ -26,16 +27,19 @@ public class DbHelper {
     private Map<String, ArrayList<DbInsertListener>> insertCallbacks;
     private Map<String, ArrayList<DbUpdateListener>> updateCallbacks;
     private Map<String, ArrayList<DbDeleteListener>> deleteCallbacks;
+    private static String DB_NAME = "lesask.db";
+    private static int DB_VERSION = 2;
 
     public SQLiteDatabase getDb() {
         return db;
     }
 
-    private DbHelper() {
+    private DbHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
+        super(context, name, factory, version);
         insertCallbacks = new HashMap<>();
         updateCallbacks = new HashMap<>();
         deleteCallbacks = new HashMap<>();
-        db = context.openOrCreateDatabase("lesask.db", Context.MODE_PRIVATE, null);
+        db = getWritableDatabase();
     }
 
     public static final DbHelper getInstance(Context context){
@@ -43,9 +47,27 @@ public class DbHelper {
         return LazyHolder.INSTANCE;
     }
     private static class LazyHolder {
-        private static final DbHelper INSTANCE = new DbHelper();
+        private static final DbHelper INSTANCE = new DbHelper(context, DB_NAME, null, DB_VERSION);
     }
-    public void appendInsertListener(String table,DbInsertListener listener){
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        Log.e(TAG ,"db onCreate");
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if(oldVersion==1){
+            //增加userid字段
+            Log.e(TAG ,"db onUpgrade version:"+oldVersion);
+            db.execSQL("alter table t_sport add column userid integer not null default 0");
+            db.execSQL("alter table t_sport_record add column userid integer not null default 0");
+            db.execSQL("alter table t_sport_record_day add column userid integer not null default 0");
+            db.execSQL("alter table t_sport_record_month add column userid integer not null default 0");
+        }
+    }
+
+    public void appendInsertListener(String table, DbInsertListener listener){
         if(!insertCallbacks.containsKey(table))
             insertCallbacks.put(table, new ArrayList<DbInsertListener>());
         insertCallbacks.get(table).add(listener);

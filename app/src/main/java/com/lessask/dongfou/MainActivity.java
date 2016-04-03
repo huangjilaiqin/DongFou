@@ -31,6 +31,7 @@ import com.lessask.dongfou.dialog.StringPickerTwoDialog;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
+import com.lessask.dongfou.util.GlobalInfo;
 import com.lessask.dongfou.util.TimeHelper;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionButton;
 import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
@@ -58,9 +59,12 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionsMenu menu;
     private ArcMenu arcMenu;
 
+    private GlobalInfo globalInfo = GlobalInfo.getInstance();
+
     private final String TAG = MainActivity.class.getSimpleName();
     private final int GET_SPORT = 1;
     private final int ADD_SPORT = 2;
+    private final int LOGIN_REGISTER = 3;
 
     private ArrayList<Sport> sports;
     private Map<Integer,Sport> sportMap;
@@ -140,17 +144,7 @@ public class MainActivity extends AppCompatActivity {
         circlePageIndicator.setViewPager(mViewPager);
 
         arcMenu = (ArcMenu) findViewById(R.id.arc_menu);
-        /*
-        menu = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
-        FloatingActionButton buttona = (FloatingActionButton) findViewById(R.id.action_a);
-        initFloatingActionButton(buttona,sports.get(0));
-        FloatingActionButton buttonb = (FloatingActionButton) findViewById(R.id.action_b);
-        initFloatingActionButton(buttonb,sports.get(1));
-        FloatingActionButton buttonc = (FloatingActionButton) findViewById(R.id.action_c);
-        initFloatingActionButton(buttonc,sports.get(2));
-        FloatingActionButton buttond = (FloatingActionButton) findViewById(R.id.action_d);
-        initFloatingActionButton(buttond,sports.get(3));
-        */
+
 
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
         initMenu();
@@ -252,6 +246,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("arg1", data1);
         values.put("arg2", data2);
         values.put("time", new Date().getTime() / 1000);
+        values.put("userid", ""+globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
 
@@ -293,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
             values.put("seq", sport.getSeq());
             values.put("lastvalue", sport.getLastValue());
             values.put("lastvalue2", sport.getLastValue2());
-            DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values,"id=?",new String[]{sport.getId()+""});
+            DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values,"id=? and userid=?",new String[]{sport.getId()+"",""+globalInfo.getUserid()});
 
             if(isSameDay){
                 updateSportDay(sportRecord);
@@ -354,11 +349,13 @@ public class MainActivity extends AppCompatActivity {
         //自1970年后的秒数
         long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
         values.put("time", time);
+        values.put("userid", ""+globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
     }
     private void updateSportDay(SportRecord record){
         long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
-        String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time;
+        ContentValues values = new ContentValues();
+        String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid();
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
 
@@ -368,11 +365,12 @@ public class MainActivity extends AppCompatActivity {
         values.put("amount", record.getAmount());
         long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
         values.put("time", time);
+        values.put("userid", ""+globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record_month", null, values);
     }
     private void updateSportMonth(SportRecord record){
         long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
-        String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time;
+        String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid();
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
 
@@ -486,6 +484,9 @@ public class MainActivity extends AppCompatActivity {
                     int sportid = data.getIntExtra("sportid", -1);
                     showDataDialog(loadSport(sportid));
                     break;
+                case LOGIN_REGISTER:
+                    Toast.makeText(MainActivity.this, "success", Toast.LENGTH_SHORT).show();
+                    break;
                 default:
                     break;
             }
@@ -505,6 +506,10 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()){
             case R.id.sync:
                 Toast.makeText(this, "该版本暂时不能同步",Toast.LENGTH_SHORT).show();
+                if(globalInfo.getUserid()==0){
+                    Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                    startActivityForResult(intent, LOGIN_REGISTER);
+                }
                 break;
             case R.id.setting:
                 break;

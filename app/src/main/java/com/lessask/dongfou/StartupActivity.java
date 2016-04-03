@@ -3,6 +3,8 @@ package com.lessask.dongfou;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
@@ -20,6 +22,7 @@ import com.google.gson.reflect.TypeToken;
 import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.DbHelper;
+import com.lessask.dongfou.util.GlobalInfo;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -30,6 +33,8 @@ public class StartupActivity extends AppCompatActivity {
     private String TAG = StartupActivity.class.getSimpleName();
     private SharedPreferences baseInfo;
     private final int HANDLER_MAIN = 1;
+
+    private GlobalInfo globalInfo = GlobalInfo.getInstance();
 
     private Handler handler = new Handler(){
         @Override
@@ -60,12 +65,16 @@ public class StartupActivity extends AppCompatActivity {
         }
         baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
 
-
+        Log.e(TAG, getVersion());
 
         //判断是否是第一次启动
         if(!baseInfo.getBoolean("initDb", false)){
             initDb(baseInfo);
         }
+        int useid = baseInfo.getInt("userid", 0);
+        globalInfo.setUserid(useid);
+
+
         loadSports(DbHelper.getInstance(this).getDb());
 
         handler.postDelayed(
@@ -77,6 +86,16 @@ public class StartupActivity extends AppCompatActivity {
         },2000);
     }
 
+    private String getVersion(){
+        try {
+            PackageManager manager = getPackageManager();
+            PackageInfo info = manager.getPackageInfo(getPackageName(), 0);
+            return info.versionName;
+        }catch (PackageManager.NameNotFoundException e){
+
+        }
+        return "";
+    }
 
     private void initDb(SharedPreferences baseInfo){
         SharedPreferences.Editor editor = baseInfo.edit();
@@ -113,6 +132,7 @@ public class StartupActivity extends AppCompatActivity {
     }
 
     private void loadSports(final SQLiteDatabase db){
+        Log.e(TAG, "db version:"+db.getVersion());
         Type type = new TypeToken<ArrayListResponse<Sport>>() {}.getType();
         GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.sportUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
             @Override
@@ -139,14 +159,15 @@ public class StartupActivity extends AppCompatActivity {
                         values.put("maxnum", sport.getMaxnum());
                         values.put("unit2", sport.getUnit2());
                         values.put("maxnum2", sport.getMaxnum2());
-                        //values.put("frequency", sport.getFrequency());
+                        values.put("userid", globalInfo.getUserid());
 
-                        Cursor cr = db.rawQuery("select 1 from t_sport where id="+sport.getId(),null);
+                        String[] args = new String[]{""+sport.getId(),""+globalInfo.getUserid()};
+                        Cursor cr = db.rawQuery("select 1 from t_sport where id=? and userid=?", args);
                         if(cr.getCount()==0) {
                             db.insert("t_sport", "", values);
                             Log.e(TAG, "insert t_sport:" + sport.getName());
                         }else{
-                            db.update("t_sport", values,"id=?",new String[]{sport.getId()+""});
+                            db.update("t_sport", values,"id=? and userid=?",args);
                             Log.e(TAG, "update t_sport:" + sport.getName());
                         }
                     }
