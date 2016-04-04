@@ -181,6 +181,8 @@ public class TimeHelper {
     @NonNull
     public static Gson gsonWithDate() {
         final GsonBuilder builder = new GsonBuilder();
+        //生成字符串时的时间格式
+        builder.setDateFormat("yyyy-MM-dd HH:mm:ss");
 
         builder.registerTypeAdapter(Date.class, new JsonDeserializer<Date>() {
 
@@ -203,6 +205,7 @@ public class TimeHelper {
     @NonNull
     public static Gson gsonWithNodeDate() {
         final GsonBuilder builder = new GsonBuilder();
+        builder.setDateFormat("yyyy-MM-dd HH:mm:ss");
 
         final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         //按照伦敦时区格式化时间, 返回的时本地时间

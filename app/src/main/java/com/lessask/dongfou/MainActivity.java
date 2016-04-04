@@ -2,6 +2,7 @@ package com.lessask.dongfou;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
@@ -22,32 +23,29 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-//import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.android.volley.Request;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.capricorn.ArcMenu;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
+import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
 import com.lessask.dongfou.util.GlobalInfo;
 import com.lessask.dongfou.util.TimeHelper;
-import com.oguzdev.circularfloatingactionmenu.library.FloatingActionButton;
-import com.oguzdev.circularfloatingactionmenu.library.FloatingActionMenu;
-import com.oguzdev.circularfloatingactionmenu.library.SubActionButton;
 import com.viewpagerindicator.CirclePageIndicator;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import de.hdodenhof.circleimageview.CircleImageView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
 
     private FragmentPagerAdapter mFragmentPagerAdapter;
     private ViewPager mViewPager;
-    private FloatingActionsMenu menu;
+    private Menu menu;
     private ArcMenu arcMenu;
 
     private GlobalInfo globalInfo = GlobalInfo.getInstance();
@@ -65,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
     private final int GET_SPORT = 1;
     private final int ADD_SPORT = 2;
     private final int LOGIN_REGISTER = 3;
+    private final int UPLOAD_RECORD_ERROR = 4;
+    private final int UPLOAD_RECORD_DONE = 5;
 
     private ArrayList<Sport> sports;
     private Map<Integer,Sport> sportMap;
@@ -72,20 +72,33 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Fragment> fragmentDatas;
     private ArrayList<ImageView> menuImages;
     private Bundle fragmentBundle = new Bundle();
+    private DbHelper dbHelper;
+    private SQLiteDatabase dbInstance;
 
     private Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what){
                 case ADD_SPORT:
+                    Log.e(TAG, "ADD_SPORT");
                     SportRecord sportRecord = (SportRecord)msg.obj;
                     updateFragments(sportRecord);
                     mViewPager.setCurrentItem(0);
                     mRecyclerView.scrollToPosition(0);
                     break;
+                case UPLOAD_RECORD_ERROR:
+                    setSyncMenuVisible(true);
+                    break;
+                case UPLOAD_RECORD_DONE:
+                    setSyncMenuVisible(hasNotSyncRecord());
+                    break;
             }
         }
     };
+
+    private void setSyncMenuVisible(boolean visible){
+        menu.getItem(0).setVisible(visible);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +106,8 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "oncreate savedInstanceState:" + savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        dbHelper = DbHelper.getInstance(this);
+        dbInstance = dbHelper.getDb();
         sports = new ArrayList<>();
         sportMap = new HashMap<>();
         sportGathers = new ArrayList<>();
@@ -164,14 +179,13 @@ public class MainActivity extends AppCompatActivity {
             //item.setImageResource(R.drawable.button_action);
             final Sport sport = sports.get(i);
             String headImgUrl = Config.imagePrefix+sport.getImage();
-            ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(item, 0, 0);
+            ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(item, R.drawable.dongfou, R.drawable.dongfou);
             VolleyHelper.getInstance().getImageLoader().get(headImgUrl, headImgListener, 100, 100);
 
             final int position = i;
             arcMenu.addItem(item, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    //Toast.makeText(MainActivity.this, "position:" + position, Toast.LENGTH_SHORT).show();
                     Log.e(TAG, "add sport:"+sports.get(position).getName());
                     showDataDialog(sports.get(position));
                 }
@@ -193,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showDataDialog(final Sport sport){
-        int lastV,lastV2;
+        float lastV,lastV2;
         switch (sport.getKind()) {
             case 1:
                 lastV = sport.getLastValue();
@@ -202,7 +216,6 @@ public class MainActivity extends AppCompatActivity {
                 StringPickerDialog stringPickerDialog = new StringPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(),lastV, sport.getUnit(), new StringPickerDialog.OnSelectListener() {
                     @Override
                     public void onSelect(int data) {
-                        //Toast.makeText(MainActivity.this, data, Toast.LENGTH_SHORT).show();
                         addSportRecord(sport.getId(), data, 0);
                     }
                 });
@@ -220,7 +233,6 @@ public class MainActivity extends AppCompatActivity {
                 StringPickerTwoDialog stringPickerTwoDialog = new StringPickerTwoDialog(MainActivity.this, sport.getName(), sport.getMaxnum(),lastV, sport.getUnit(), sport.getMaxnum2(),lastV2, sport.getUnit2(), new StringPickerTwoDialog.OnSelectListener() {
                     @Override
                     public void onSelect(int data, int data2) {
-                        //Toast.makeText(MainActivity.this, data + ", " + data2, Toast.LENGTH_SHORT).show();
                         addSportRecord(sport.getId(), data, data2);
                     }
                 });
@@ -247,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("arg2", data2);
         values.put("time", new Date().getTime() / 1000);
         values.put("userid", ""+globalInfo.getUserid());
+        //long id = dbInstance.insert("t_sport_record", null, values);
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
 
@@ -305,6 +318,8 @@ public class MainActivity extends AppCompatActivity {
             message.what=ADD_SPORT;
             message.obj = sportRecord;
             handler.sendMessage(message);
+
+            uploadRecord();
 
         }
     };
@@ -405,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
 
         //id int primary key,name text not null,image text not null,type int not null,unit text not null,unit2 text null,int maxnum not null,frequency int not null default 0)");
-        Cursor cr = db.rawQuery("select * from t_sport order by lasttime desc,id limit 5", null);
+        Cursor cr = db.rawQuery("select * from t_sport where userid="+globalInfo.getUserid()+" order by lasttime desc,id limit 5", null);
         while (cr.moveToNext()){
             //int id, String name, String image,int kind,String unit,String unit2,int maxnum,int frequency) {
             /*
@@ -459,7 +474,7 @@ public class MainActivity extends AppCompatActivity {
         Cursor cr = db.rawQuery("select * from t_sport_record where datetime(time)>=datetime('now') order by time desc", null);
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000));
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
             mRecyclerViewAdapter.append(sportRecord);
         }
         mRecyclerViewAdapter.notifyDataSetChanged();
@@ -485,7 +500,25 @@ public class MainActivity extends AppCompatActivity {
                     showDataDialog(loadSport(sportid));
                     break;
                 case LOGIN_REGISTER:
-                    Toast.makeText(MainActivity.this, "success", Toast.LENGTH_SHORT).show();
+                    int userid = data.getIntExtra("userid", -1);
+                    //记录userid
+                    globalInfo.setUserid(userid);
+                    SharedPreferences baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = baseInfo.edit();
+                    editor.putInt("userid", userid);
+                    editor.commit();
+
+                    //更新userid为0的记录
+                    String sql = "update t_sport set userid="+userid+" where userid=0";
+                    dbInstance.execSQL(sql);
+                    sql = "update t_sport_record set userid="+userid+" where userid=0";
+                    dbInstance.execSQL(sql);
+                    sql = "update t_sport_record_day set userid="+userid+" where userid=0";
+                    dbInstance.execSQL(sql);
+                    sql = "update t_sport_record_month set userid="+userid+" where userid=0";
+                    dbInstance.execSQL(sql);
+
+                    uploadRecord();
                     break;
                 default:
                     break;
@@ -493,10 +526,96 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void uploadRecord(){
+        String sql = "select * from t_sport_record where seq=0;";
+        //select * from t_sport_record;
+        Cursor cr = dbInstance.rawQuery(sql, null);
+        final ArrayList<SportRecord> sportRecords = new ArrayList<>();
+        while (cr.moveToNext()) {
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0,userid int not null default 0)");
+            int id = cr.getInt(0);
+            int sportid=cr.getInt(1);
+            float amount = cr.getFloat(2);
+            float arg1=cr.getFloat(3);
+            float arg2=cr.getFloat(4);
+            int seq=cr.getInt(6);
+            Date time = new Date(cr.getInt(5)*1000l);
+            Log.e(TAG, "upload time:"+time);
+            SportRecord record = new SportRecord(id,sportid,amount,arg1,arg2,seq,time,globalInfo.getUserid());
+            sportRecords.add(record);
+        }
+        cr.close();
+
+        Type type = new TypeToken<ArrayListResponse<SportRecord>>() {}.getType();
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, globalInfo.getUploadRecordUrl(), type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
+            @Override
+            public void onStart() {
+                //显示同步转圈圈动画
+            }
+            @Override
+            public void onResponse(ArrayListResponse response) {
+                Log.e(TAG, "response:" + response.toString());
+                if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                    handler.sendEmptyMessage(UPLOAD_RECORD_ERROR);
+                }else {
+                    ArrayList<SportRecord> datas = response.getDatas();
+                    //入库,本地化
+                    for(int i=0;i<datas.size();i++){
+                        SportRecord record = datas.get(i);
+
+                        ContentValues values = new ContentValues();
+                        values.put("seq", record.getSeq());
+
+                        String[] args = new String[]{""+record.getId(),""+record.getUserid()};
+                        dbInstance.update("t_sport_record", values,"id=? and userid=?",args);
+                        Log.e(TAG, "update t_sport_record, seq:" + record.getSeq());
+                    }
+                    handler.sendEmptyMessage(UPLOAD_RECORD_DONE);
+                }
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                Toast.makeText(MainActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "同步记录, 网络错误:"+error);
+                handler.sendEmptyMessage(UPLOAD_RECORD_ERROR);
+            }
+
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                Log.e(TAG, "getPostData");
+                datas.put("records",TimeHelper.gsonWithDate().toJson(sportRecords));
+                return datas;
+            }
+        });
+        VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        this.menu = menu;
+        setSyncMenuVisible(hasNotSyncRecord());
+        if(globalInfo.getUserid()==0)
+            setSyncMenuVisible(true);
+        return true;
+    }
+
+    private boolean hasNotSyncRecord(){
+        String sql = "select count(*) from t_sport_record where seq=0;";
+        //select * from t_sport_record;
+        Cursor cr = dbInstance.rawQuery(sql, null);
+
+        if(cr.moveToNext()){
+            int count = cr.getInt(0);
+            Log.e(TAG, "not sync record size:"+count);
+            if(count>0)
+                return true;
+            else
+                return false;
+        }
         return true;
     }
 
@@ -505,11 +624,16 @@ public class MainActivity extends AppCompatActivity {
 
         switch (item.getItemId()){
             case R.id.sync:
-                Toast.makeText(this, "该版本暂时不能同步",Toast.LENGTH_SHORT).show();
                 if(globalInfo.getUserid()==0){
                     Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
                     startActivityForResult(intent, LOGIN_REGISTER);
+                }else {
+                    uploadRecord();
                 }
+                break;
+            case R.id.feedback:
+                Intent intent = new Intent(MainActivity.this, FeedbackActivity.class);
+                startActivity(intent);
                 break;
             case R.id.setting:
                 break;

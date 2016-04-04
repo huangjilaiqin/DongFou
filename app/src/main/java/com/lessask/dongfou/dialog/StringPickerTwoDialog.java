@@ -22,10 +22,10 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
     private NumberPicker numberPicker2;
     private String title;
     private String[] values;
-    private int initValue;
+    private float initValue;
     private String unit;
     private String[] values2;
-    private int initValue2;
+    private float initValue2;
     private String unit2;
 
 
@@ -48,7 +48,7 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue(initValue-1);
+        numberPicker.setValue((int)(initValue-1));
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
         TextView unitView = (TextView)view.findViewById(R.id.unit);
         unitView.setText(unit);
@@ -57,13 +57,13 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         numberPicker2.setDisplayedValues(values2);
         numberPicker2.setMinValue(0);
         numberPicker2.setMaxValue(values2.length - 1);
-        numberPicker2.setValue(initValue2-1);
+        numberPicker2.setValue((int)(initValue2-1));
         numberPicker2.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
         TextView unitView2 = (TextView)view.findViewById(R.id.unit2);
         unitView2.setText(unit2);
 
     }
-    public StringPickerTwoDialog(Context context,String title,int maxNumber,int initValue,String unit,int maxNumber2,int initValue2,String uint2, OnSelectListener mSelectCallBack) {
+    public StringPickerTwoDialog(Context context,String title,int maxNumber,float initValue,String unit,int maxNumber2,float initValue2,String uint2, OnSelectListener mSelectCallBack) {
         super(context);
         this.title = title;
         this.initValue = initValue;

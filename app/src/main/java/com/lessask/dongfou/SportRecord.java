@@ -9,12 +9,13 @@ public class SportRecord {
     private int id;
     private int sportid;
     private float amount;
-    private int arg1;
-    private int arg2;
+    private float arg1;
+    private float arg2;
     private int seq;
     private Date time;
+    private int userid;
 
-    public SportRecord(int id, int sportid, float amount, int arg1, int arg2, int seq, Date time) {
+    public SportRecord(int id, int sportid, float amount, float arg1, float arg2, int seq, Date time,int userid) {
         this.id = id;
         this.sportid = sportid;
         this.amount = amount;
@@ -22,6 +23,15 @@ public class SportRecord {
         this.arg2 = arg2;
         this.seq = seq;
         this.time = time;
+        this.userid = userid;
+    }
+
+    public int getUserid() {
+        return userid;
+    }
+
+    public void setUserid(int userid) {
+        this.userid = userid;
     }
 
     public int getId() {
@@ -48,7 +58,7 @@ public class SportRecord {
         this.amount = amount;
     }
 
-    public int getArg1() {
+    public float getArg1() {
         return arg1;
     }
 
@@ -56,7 +66,7 @@ public class SportRecord {
         this.arg1 = arg1;
     }
 
-    public int getArg2() {
+    public float getArg2() {
         return arg2;
     }
 

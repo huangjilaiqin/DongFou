@@ -291,7 +291,7 @@ public class FragmentData extends Fragment {
         set1.setLabel("跑步");
         set1.setLabel("");
         if(isAdded())
-            set1.setColor(getResources().getColor(R.color.colorAccent));
+            set1.setColor(getResources().getColor(R.color.colorAccent1));
         set1.setBarSpacePercent(35f);
 
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();

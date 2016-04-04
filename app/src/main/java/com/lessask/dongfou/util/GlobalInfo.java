@@ -17,6 +17,11 @@ public class GlobalInfo {
     private int userid;
     private String registerUrl = "http://123.59.40.113/httproute/dongfou/register";
     private String loginUrl = "http://123.59.40.113/httproute/dongfou/login";
+    private String uploadRecordUrl = "http://123.59.40.113/httproute/dongfou/upload/sportrecord";
+
+    public String getUploadRecordUrl() {
+        return uploadRecordUrl;
+    }
 
     public int getUserid() {
         return userid;

@@ -22,7 +22,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
     private NumberPicker numberPicker;
     private String title;
     private String[] values;
-    private int initValue;
+    private float initValue;
     private String unit;
 
 
@@ -56,12 +56,12 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue(initValue-1);
+        numberPicker.setValue((int)(initValue-1));
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
 
 
     }
-    public StringPickerDialog(Context context,String title,int maxNumber,int initValue,String unit,OnSelectListener mSelectCallBack) {
+    public StringPickerDialog(Context context,String title,int maxNumber,float initValue,String unit,OnSelectListener mSelectCallBack) {
         super(context);
         values = new String[maxNumber];
         for(int i=0;i<maxNumber;i++){

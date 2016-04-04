@@ -22,12 +22,12 @@ public class Sport {
     int days;
     Date lastTime;
     int seq;
-    int lastValue;
-    int lastValue2;
+    float lastValue;
+    float lastValue2;
     //db.execSQL("create table t_sport(id int primary key,name text not null,image text not null,type int not null,unit text not null,unit2 text null" +
      //       ",maxnum int not null,frequency int not null default 0,total real not null,avg real not null,days int not null,last_time int NOT NULL,seq int not null default 0)");
     public Sport(int id, String name, String image,int kind,String unit,int maxnum,String unit2,int maxnum2,int frequency
-            ,float total,float avg,int days,Date lastTime,int seq,int lastValue,int lastValue2) {
+            ,float total,float avg,int days,Date lastTime,int seq,float lastValue,float lastValue2) {
         this.id = id;
         this.name = name;
         this.image = image;
@@ -46,19 +46,19 @@ public class Sport {
         this.lastValue2=lastValue2;
     }
 
-    public int getLastValue() {
+    public float getLastValue() {
         return lastValue;
     }
 
-    public void setLastValue(int lastValue) {
+    public void setLastValue(float lastValue) {
         this.lastValue = lastValue;
     }
 
-    public int getLastValue2() {
+    public float getLastValue2() {
         return lastValue2;
     }
 
-    public void setLastValue2(int lastValue2) {
+    public void setLastValue2(float lastValue2) {
         this.lastValue2 = lastValue2;
     }
 

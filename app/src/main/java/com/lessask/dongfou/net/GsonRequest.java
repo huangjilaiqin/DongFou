@@ -28,7 +28,6 @@ public class GsonRequest<T> extends Request<T> {
         super(method, url, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e("GsonReuest", error.getMessage());
                 postGsonRequest.onError(error);
             }
         });
@@ -56,7 +55,7 @@ public class GsonRequest<T> extends Request<T> {
         this.listener = new Response.Listener<T>() {
             @Override
             public void onResponse(T response) {
-                Log.e(TAG, "onResponse");
+                //Log.e(TAG, "onResponse");
                 postGsonRequest.onResponse(response);
             }
         };

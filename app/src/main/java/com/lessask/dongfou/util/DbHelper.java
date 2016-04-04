@@ -92,10 +92,11 @@ public class DbHelper extends SQLiteOpenHelper{
         Object obj=null;
         switch (table){
             case "t_sport_record":
-                obj = new SportRecord(0,values.getAsInteger("sportid"),values.getAsFloat("amount"),values.getAsInteger("arg1"),values.getAsInteger("arg2"),0,new Date(values.getAsLong("time")*1000));
+                obj = new SportRecord(0,values.getAsInteger("sportid"),values.getAsFloat("amount"),values.getAsInteger("arg1"),values.getAsInteger("arg2"),0,new Date(values.getAsLong("time")*1000),values.getAsInteger("userid"));
                 break;
         }
         long rowId = db.insert(table,nullColumnHack,values);
+        Log.e(TAG, "insert table:"+table+", rowid:"+rowId);
         if(obj instanceof SportRecord)
             ((SportRecord) obj).setId((int)rowId);
 

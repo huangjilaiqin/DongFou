@@ -7,8 +7,11 @@ import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.Volley;
+
+import java.awt.font.TextAttribute;
 
 /**
  * Created by huangji on 2015/12/9.
@@ -59,12 +62,17 @@ public class VolleyHelper {
         private final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(20);
         @Override
         public Bitmap getBitmap(String url) {
+
+            if(cache.get(url)!=null)
+                Log.e(TAG, "cache:"+url);
+            else
+                Log.e(TAG, "not cache:"+url);
+
             return cache.get(url);
         }
 
         @Override
         public void putBitmap(String url, Bitmap bitmap) {
-            Log.e(TAG, "bitmap size:"+bitmap.getByteCount()/1024);
             cache.put(url, bitmap);
         }
         public Bitmap remove(String url){

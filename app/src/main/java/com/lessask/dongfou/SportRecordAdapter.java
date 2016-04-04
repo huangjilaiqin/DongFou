@@ -49,11 +49,19 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         StringBuilder detail = new StringBuilder();
         int kind = sport.getKind();
         if(kind==1){
-            detail.append(sportRecord.getArg1());
-            detail.append(sport.getUnit());
+            String unit = sport.getUnit();
+            if(unit.equals("次"))
+                detail.append((int)sportRecord.getArg1());
+            else
+                detail.append(sportRecord.getArg1());
+            detail.append(unit);
         }else if(kind==2){
-            detail.append(sportRecord.getArg1());
-            detail.append(sport.getUnit());
+            String unit = sport.getUnit();
+            if(unit.equals("次"))
+                detail.append((int)sportRecord.getArg1());
+            else
+                detail.append(sportRecord.getArg1());
+            detail.append(unit);
             detail.append(" ");
             detail.append(sportRecord.getArg2());
             detail.append(sport.getUnit2());
@@ -62,7 +70,7 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         }
         holder.detail.setText(detail.toString());
         holder.time.setText(TimeHelper.date2Chat(sportRecord.getTime()));
-        holder.circle.setBackgroundColor(context.getResources().getColor(R.color.colorAccent));
+        holder.circle.setBackgroundColor(context.getResources().getColor(R.color.colorAccent1));
 
     }
 

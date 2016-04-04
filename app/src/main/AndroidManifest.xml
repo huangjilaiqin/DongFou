@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".MyApplication"
@@ -24,7 +25,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".SportsActivity" />
-        <activity android:name=".LoginRegisterActivity"></activity>
+        <activity android:name=".LoginRegisterActivity" />
+        <activity android:name=".FeedbackActivity"></activity>
     </application>
 
 </manifest>
