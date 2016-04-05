@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     signingConfigs {
+
         dongfou {
             keyAlias 'dongfou'
             keyPassword '19910725'
@@ -26,6 +27,11 @@ android {
         }
         debug {
             signingConfig signingConfigs.dongfou
+        }
+    }
+    productFlavors {
+
+        flavor {
         }
     }
 }
