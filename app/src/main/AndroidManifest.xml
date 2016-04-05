@@ -11,7 +11,7 @@
         android:name=".MyApplication"
         android:allowBackup="true"
         android:icon="@drawable/runnging"
-        android:label="动否"
+        android:label="${name}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity" />

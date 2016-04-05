@@ -547,7 +547,7 @@ public class MainActivity extends AppCompatActivity {
         cr.close();
 
         Type type = new TypeToken<ArrayListResponse<SportRecord>>() {}.getType();
-        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, globalInfo.getUploadRecordUrl(), type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.uploadRecordUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
             @Override
             public void onStart() {
                 //显示同步转圈圈动画

@@ -47,7 +47,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
         findViewById(R.id.login).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,globalInfo.getLoginUrl(),User.class, new GsonRequest.PostGsonRequest<User>() {
+                GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,Config.loginUrl,User.class, new GsonRequest.PostGsonRequest<User>() {
                     @Override
                     public void onStart() {
                         }
@@ -85,7 +85,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
         findViewById(R.id.register).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,globalInfo.getRegisterUrl(),User.class, new GsonRequest.PostGsonRequest<User>() {
+                GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,Config.registerUrl,User.class, new GsonRequest.PostGsonRequest<User>() {
                     @Override
                     public void onStart() {
                     }

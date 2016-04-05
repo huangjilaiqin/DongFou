@@ -2,22 +2,12 @@ apply plugin: 'com.android.application'
 
 android {
     signingConfigs {
-
         dongfou {
             keyAlias 'dongfou'
             keyPassword '19910725'
             storeFile file('dongfou.jks')
             storePassword '19910725'
         }
-    }
-    compileSdkVersion 23
-    buildToolsVersion "23.0.1"
-    defaultConfig {
-        applicationId "com.lessask.dongfou"
-        minSdkVersion 15
-        targetSdkVersion 23
-        versionCode 1
-        versionName "0.0.1"
     }
     buildTypes {
         release {
@@ -29,15 +19,35 @@ android {
             signingConfig signingConfigs.dongfou
         }
     }
-    productFlavors {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
+    defaultConfig {
+        applicationId "com.lessask.dongfou"
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode 1
+        versionName "0.0.1"
+        signingConfig signingConfigs.dongfou
+    }
 
-        flavor {
+    productFlavors {
+        online {
+            applicationId "com.lessask.dongfou"
+            manifestPlaceholders = [name: "动否"]
+            signingConfig signingConfigs.dongfou
+            buildConfigField 'String','SERVER_HOST','"http://120.24.75.92"'
+        }
+        yu {
+            applicationId "com.lessask.dongfou.flavor"
+            manifestPlaceholders = [name: "动否yu"]
+            signingConfig signingConfigs.dongfou
+            buildConfigField 'String','SERVER_HOST','"http://123.59.40.113"'
         }
     }
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
