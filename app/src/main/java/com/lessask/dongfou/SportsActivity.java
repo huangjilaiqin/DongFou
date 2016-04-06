@@ -4,19 +4,33 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.SearchView;
+import android.support.v7.widget.SearchView.OnQueryTextListener;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.VolleyError;
+import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.DbHelper;
+import com.lessask.dongfou.util.GlobalInfo;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class SportsActivity extends AppCompatActivity {
@@ -29,12 +43,20 @@ public class SportsActivity extends AppCompatActivity {
 
     private VolleyHelper volleyHelper = VolleyHelper.getInstance();
     private Intent intent;
+    private SearchView searchView;
+    private EditText addsport;
+    private Button add;
+    private GlobalInfo globalInfo = GlobalInfo.getInstance();
+    private String contentStr;
+    private List<Sport> originSports;
+    private OnQueryTextListener onQueryTextListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sports);
 
+        originSports = new ArrayList<>();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("选择运动");
         toolbar.setTitleTextColor(getResources().getColor(R.color.white));
@@ -48,11 +70,17 @@ public class SportsActivity extends AppCompatActivity {
 
         intent = getIntent();
 
-        mSearch = (FloatingActionButton)findViewById(R.id.search);
-        mSearch.setOnClickListener(new View.OnClickListener() {
+        addsport = (EditText) findViewById(R.id.addsport);
+        add = (Button) findViewById(R.id.add);
+
+        add.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                Toast.makeText(SportsActivity.this, "该版本暂时不支持搜索", Toast.LENGTH_SHORT).show();
+            public void onClick(View v) {
+                contentStr = addsport.getText().toString().trim();
+                if(contentStr.length()>0){
+                    commit();
+                }
+
             }
         });
 
@@ -76,8 +104,37 @@ public class SportsActivity extends AppCompatActivity {
             }
         });
 
+
         mRecyclerView.showLoadingView();
         loadSports();
+
+        onQueryTextListener = new OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                Log.e(TAG, "search:"+newText);
+                List<Sport> searchResult;
+                if(newText.length()==0){
+                    searchResult = originSports;
+                }else {
+                    searchResult = new ArrayList<Sport>();
+                    for (int i = 0; i < originSports.size(); i++) {
+                        Sport sport = originSports.get(i);
+                        if (sport.getName().contains(newText))
+                            searchResult.add(sport);
+                    }
+                }
+                Log.e(TAG, "result size:"+searchResult.size());
+                mRecyclerViewAdapter.setList(searchResult);
+                Log.e(TAG, "real result size:"+mRecyclerViewAdapter.getList().size());
+                mRecyclerViewAdapter.notifyDataSetChanged();
+                return false;
+            }
+        };
     }
 
     private void loadSports(){
@@ -89,6 +146,7 @@ public class SportsActivity extends AppCompatActivity {
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));
             mRecyclerViewAdapter.append(sport);
+            originSports.add(sport);
         }
         int count = cr.getColumnCount();
         Log.e(TAG, "query db, chatgroup size:" + count);
@@ -98,5 +156,47 @@ public class SportsActivity extends AppCompatActivity {
         }else {
             mRecyclerViewAdapter.notifyDataSetChanged();
         }
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_sports, menu);
+        searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
+        searchView.setOnQueryTextListener(onQueryTextListener);
+
+        return true;
+    }
+
+    private void commit(){
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.feedbackUrl, ResponseError.class, new GsonRequest.PostGsonRequest<ResponseError>() {
+            @Override
+            public void onStart() {
+            }
+            @Override
+            public void onResponse(ResponseError response) {
+                Log.e(TAG, "response:" + response.toString());
+                if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                    Toast.makeText(SportsActivity.this, "错误:"+response.getError(),Toast.LENGTH_SHORT).show();
+                }else {
+                    addsport.setText("");
+                    Toast.makeText(SportsActivity.this, "我们将以最快的速度添加到运动库", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                Log.e(TAG, error.toString());
+                Toast.makeText(SportsActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                datas.put("userid", ""+globalInfo.getUserid());
+                datas.put("content", "运动类型: "+contentStr);
+                return datas;
+            }
+        });
+        VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
     }
 }

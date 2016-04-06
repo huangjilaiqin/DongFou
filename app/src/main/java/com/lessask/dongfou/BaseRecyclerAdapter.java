@@ -1,7 +1,9 @@
 package com.lessask.dongfou;
 
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 
+import java.awt.font.TextAttribute;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -23,6 +25,14 @@ public abstract class BaseRecyclerAdapter<T, VH extends RecyclerView.ViewHolder>
         mList.addAll(list);
     }
 
+    public void setList(List<T> list){
+        if (list == null) {
+            return;
+        }
+        mList.clear();
+        Log.e("list", "mList sieze:"+mList.size());
+        mList.addAll(list);
+    }
 
     public void append(T t) {
         if (t == null) {

@@ -96,8 +96,6 @@ public class FeedbackActivity extends AppCompatActivity {
 
                 contentStr = content.getText().toString().trim();
                 if(contentStr.length()>0){
-
-
                     commit();
                 }
             }
