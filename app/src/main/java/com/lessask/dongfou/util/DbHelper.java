@@ -43,7 +43,8 @@ public class DbHelper extends SQLiteOpenHelper{
     }
 
     public static final DbHelper getInstance(Context context){
-        DbHelper.context = context;
+        if(DbHelper.context==null)
+            DbHelper.context = context;
         return LazyHolder.INSTANCE;
     }
     private static class LazyHolder {

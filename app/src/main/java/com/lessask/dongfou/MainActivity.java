@@ -7,8 +7,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
-import android.os.PersistableBundle;
-import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -27,8 +25,6 @@ import com.android.volley.Request;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.capricorn.ArcMenu;
-import com.getbase.floatingactionbutton.FloatingActionsMenu;
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
@@ -66,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private final int UPLOAD_RECORD_ERROR = 4;
     private final int UPLOAD_RECORD_DONE = 5;
 
-    private ArrayList<Sport> sports;
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
     private ArrayList<Fragment> fragmentDatas;
@@ -108,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
 
         dbHelper = DbHelper.getInstance(this);
         dbInstance = dbHelper.getDb();
-        sports = new ArrayList<>();
         sportMap = new HashMap<>();
         sportGathers = new ArrayList<>();
         menuImages = new ArrayList<>();
@@ -132,11 +126,7 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = new Bundle();
             bundle.putInt("sportid", sportGathers.get(i).getSport().getId());
             fragmentData.setArguments(bundle);
-            //fragmentData.setSportGather(sportGathers.get(i));
-            //fragmentData.setSportid(sportGathers.get(i).getSport().getId());
-            //mFragmentPagerAdapter.addFragment(fragmentData, "");
             fragmentDatas.add(fragmentData);
-            Log.e(TAG, "add fragment:"+fragmentData);
         }
         mFragmentPagerAdapter.setSportGathers(sportGathers);
         mFragmentPagerAdapter.setFragments(fragmentDatas);
@@ -177,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
             ImageView item = new ImageView(this);
             menuImages.add(item);
             //item.setImageResource(R.drawable.button_action);
-            final Sport sport = sports.get(i);
+            final Sport sport = sportGathers.get(i).getSport();
             String headImgUrl = Config.imagePrefix+sport.getImage();
             ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(item, R.drawable.dongfou, R.drawable.dongfou);
             VolleyHelper.getInstance().getImageLoader().get(headImgUrl, headImgListener, 100, 100);
@@ -186,16 +176,13 @@ public class MainActivity extends AppCompatActivity {
             arcMenu.addItem(item, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.e(TAG, "add sport:"+sports.get(position).getName());
-                    showDataDialog(sports.get(position));
+                    Log.e(TAG, "add sport:"+sportGathers.get(position).getSport().getName());
+                    showDataDialog(sportGathers.get(position).getSport());
                 }
             });
         }
         ImageView item = new ImageView(this);
-        //item.setImageResource(R.drawable.button_action);
-        String headImgUrl = Config.imagePrefix+"more.png";
-        ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(item, 0, 0);
-        VolleyHelper.getInstance().getImageLoader().get(headImgUrl, headImgListener, 100, 100);
+        item.setImageResource(R.drawable.more);
 
         arcMenu.addItem(item, new View.OnClickListener() {
             @Override
@@ -258,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("arg1", data1);
         values.put("arg2", data2);
         values.put("time", new Date().getTime() / 1000);
-        values.put("userid", ""+globalInfo.getUserid());
+        values.put("userid", "" + globalInfo.getUserid());
         //long id = dbInstance.insert("t_sport_record", null, values);
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
@@ -351,10 +338,17 @@ public class MainActivity extends AppCompatActivity {
 
         mFragmentPagerAdapter.setFragments(fragmentDatas);
         mFragmentPagerAdapter.notifyDataSetChanged();
+        updateMenu();
     }
 
     private void updateMenu(){
-
+        for (int i=0;i<menuImages.size();i++) {
+            ImageView imageView = menuImages.get(i);
+            Sport sport = sportGathers.get(i).getSport();
+            String headImgUrl = Config.imagePrefix + sport.getImage();
+            ImageLoader.ImageListener headImgListener = ImageLoader.getImageListener(imageView, R.drawable.dongfou, R.drawable.dongfou);
+            VolleyHelper.getInstance().getImageLoader().get(headImgUrl, headImgListener, 100, 100);
+        }
     }
 
     private void insertSportDay(SportRecord record){
@@ -430,10 +424,11 @@ public class MainActivity extends AppCompatActivity {
                     */
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
-            sports.add(sport);
             sportMap.put(sport.getId(), sport);
-            sportGathers.add(new SportGather(sport,loadSportRecordById(sport.getId())));
+            sportGathers.add(new SportGather(sport, loadSportRecordById(sport.getId())));
+            Log.e(TAG, "load sport:" + sport.getName());
         }
+        Log.e(TAG, "load sports:"+sportGathers.size());
         cr.close();
     }
 

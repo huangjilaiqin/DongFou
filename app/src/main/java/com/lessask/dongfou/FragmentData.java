@@ -21,7 +21,6 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
-import com.inthecheesefactory.thecheeselibrary.fragment.support.v4.app.StatedFragment;
 import com.lessask.dongfou.util.DbDeleteListener;
 import com.lessask.dongfou.util.TimeHelper;
 
@@ -63,11 +62,9 @@ public class FragmentData extends Fragment {
         StringBuilder builder = new StringBuilder();
         for(int i=0;i<this.sportValues.size();i++)
             builder.append(this.sportValues.get(i)+",");
-        Log.e(TAG, "setSportGather:"+builder.toString());
 
         this.sport = sportGather.getSport();
         this.sportid=sport.getId();
-        Log.e(TAG, "setSportGather:" + this.sportid);
         String last="";
         for(int i=1;i<7;i++){
             if(last.length()!=0)
@@ -109,24 +106,6 @@ public class FragmentData extends Fragment {
         Log.e(TAG, "fragment update");
     }
 
-    /*
-    @Override
-    protected void onSaveState(Bundle outState) {
-        super.onSaveState(outState);
-        outState.putInt("sportid", sport.getId());
-    }
-
-    @Override
-    protected void onRestoreState(Bundle savedInstanceState) {
-        super.onRestoreState(savedInstanceState);
-        if(savedInstanceState!=null) {
-            sportid = savedInstanceState.getInt("sportid");
-        }else
-            Log.e(TAG, "sportid:" + sportid);
-    }
-    */
-
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
 
@@ -136,17 +115,9 @@ public class FragmentData extends Fragment {
         Log.e(TAG, "bundle sport:"+bundle.getInt("sportid"));
         sportid = bundle.getInt("sportid");
         loadData();
-        if(sportName==null){
-            Log.e(TAG, "aaa sportName is null fuck");
-        }else {
-            Log.e(TAG, "aaa sportName is not null");
-        }
+
         sportName = (TextView)rootView.findViewById(R.id.sport_name);
-        if(sportName==null){
-            Log.e(TAG, "sportName is null fuck");
-        }else {
-            Log.e(TAG, "sportName is not null");
-        }
+
             avg = (TextView)rootView.findViewById(R.id.avg);
             unit = (TextView)rootView.findViewById(R.id.unit);
             total = (TextView)rootView.findViewById(R.id.total);

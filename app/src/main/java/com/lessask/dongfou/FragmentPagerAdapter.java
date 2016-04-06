@@ -38,7 +38,6 @@ public class FragmentPagerAdapter extends android.support.v4.app.FragmentPagerAd
                 ft.remove(f);
             }
             ft.commit();
-            ft=null;
             fm.executePendingTransactions();
         }
         this.fragmentDatas = fragments;
@@ -59,10 +58,6 @@ public class FragmentPagerAdapter extends android.support.v4.app.FragmentPagerAd
         return POSITION_NONE;
     }
 
-    public void addFragment(Fragment fragment, String name){
-        fragmentDatas.add(fragment);
-        fragmentNames.add(name);
-    }
 
     @Override
     public Fragment getItem(int position) {

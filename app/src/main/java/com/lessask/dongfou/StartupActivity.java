@@ -14,6 +14,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -34,7 +36,10 @@ public class StartupActivity extends AppCompatActivity {
     private SharedPreferences baseInfo;
     private final int HANDLER_MAIN = 1;
 
+    private Button enter;
+    private ProgressBar loading;
     private GlobalInfo globalInfo = GlobalInfo.getInstance();
+    //private SQLiteDatabase dbInstance = DbHelper.getInstance(getApplication()).getDb();
 
     private Handler handler = new Handler(){
         @Override
@@ -45,7 +50,6 @@ public class StartupActivity extends AppCompatActivity {
                 case HANDLER_MAIN:
                     Intent intent = new Intent(StartupActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
                     startActivity(intent);
                     finish();
                     break;
@@ -73,17 +77,27 @@ public class StartupActivity extends AppCompatActivity {
         }
         int useid = baseInfo.getInt("userid", 0);
         globalInfo.setUserid(useid);
-
-
-        loadSports(DbHelper.getInstance(this).getDb());
-
-        handler.postDelayed(
-        new Runnable(){
+        enter = (Button) findViewById(R.id.enter);
+        loading = (ProgressBar) findViewById(R.id.loading);
+        enter.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                handler.sendEmptyMessage(HANDLER_MAIN);
+            public void onClick(View v) {
+                loadSports(DbHelper.getInstance(StartupActivity.this).getDb());
             }
-        },2000);
+        });
+
+        if(getSportSize()<5) {
+            loadSports(DbHelper.getInstance(this).getDb());
+        }else {
+            handler.postDelayed(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        handler.sendEmptyMessage(HANDLER_MAIN);
+                    }
+                }, 2000);
+        }
+
     }
 
     private String getVersion(){
@@ -131,19 +145,36 @@ public class StartupActivity extends AppCompatActivity {
         editor.commit();
     }
 
+    private int getSportSize(){
+        String sql = "select count(*) from t_sport;";
+        //select * from t_sport_record;
+        Cursor cr = DbHelper.getInstance(StartupActivity.this).getDb().rawQuery(sql, null);
+
+        int count = 0;
+        if(cr.moveToNext()){
+            count = cr.getInt(0);
+        }
+        cr.close();
+        return count;
+    }
+
     private void loadSports(final SQLiteDatabase db){
-        Log.e(TAG, "db version:"+db.getVersion());
+        Log.e(TAG, "db version:" + db.getVersion());
         Type type = new TypeToken<ArrayListResponse<Sport>>() {}.getType();
         GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.sportUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
             @Override
             public void onStart() {
                 Log.e(TAG, "start "+Config.sportUrl);
+                loading.setVisibility(View.VISIBLE);
             }
             @Override
             public void onResponse(ArrayListResponse response) {
+                loading.setVisibility(View.INVISIBLE);
                 Log.e(TAG, "response:" + response.toString());
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
                     Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                    Toast.makeText(StartupActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
+                    enter.setVisibility(View.VISIBLE);
                 }else {
                     ArrayList<Sport> datas = response.getDatas();
                     //入库,本地化
@@ -171,18 +202,34 @@ public class StartupActivity extends AppCompatActivity {
                             Log.e(TAG, "update t_sport:" + sport.getName());
                         }
                     }
+
+                    //
+                    if(getSportSize()>=5) {
+                        handler.postDelayed(
+                                new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        handler.sendEmptyMessage(HANDLER_MAIN);
+                                    }
+                                }, 2000);
+                    }else{
+                        Toast.makeText(StartupActivity.this, "请检查网络", Toast.LENGTH_SHORT).show();
+                        enter.setVisibility(View.VISIBLE);
+                    }
                 }
             }
 
             @Override
             public void onError(VolleyError error) {
-                Toast.makeText(StartupActivity.this, "网络错误:加载运动列表失败" + error, Toast.LENGTH_SHORT);
+                Log.e(TAG, ""+error.getMessage());
+                Toast.makeText(StartupActivity.this, "请检查网络,第一次须同步运动类型列表", Toast.LENGTH_LONG).show();
+                loading.setVisibility(View.INVISIBLE);
+                enter.setVisibility(View.VISIBLE);
             }
 
             @Override
             public Map getPostData() {
                 Map datas = new HashMap();
-                Log.e(TAG, "getPostData");
                 return datas;
             }
         });
