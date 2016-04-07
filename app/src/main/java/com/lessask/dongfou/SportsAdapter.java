@@ -18,6 +18,7 @@ import com.lessask.dongfou.net.VolleyHelper;
  */
 public class SportsAdapter extends BaseRecyclerAdapter<Sport,SportsAdapter.ViewHolder>{
     private OnItemClickListener onItemClickListener;
+    private OnItemLongClickListener onItemLongClickListener;
     private Context context;
     public SportsAdapter(Context context) {
         this.context = context;
@@ -25,6 +26,9 @@ public class SportsAdapter extends BaseRecyclerAdapter<Sport,SportsAdapter.ViewH
 
     public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
         this.onItemClickListener = onItemClickListener;
+    }
+    public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
+        this.onItemLongClickListener = onItemLongClickListener;
     }
 
     @Override
@@ -45,6 +49,17 @@ public class SportsAdapter extends BaseRecyclerAdapter<Sport,SportsAdapter.ViewH
             @Override
             public void onClick(View view) {
                 onItemClickListener.onItemClick(view, position);
+            }
+        });
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                if (onItemLongClickListener != null) {
+                    Vibrator vib = (Vibrator) context.getSystemService(Service.VIBRATOR_SERVICE);
+                    vib.vibrate(10);
+                    onItemLongClickListener.onItemLongClick(view, position);
+                }
+                return false;
             }
         });
     }

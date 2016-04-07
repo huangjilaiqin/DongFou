@@ -78,6 +78,11 @@ public class DbHelper extends SQLiteOpenHelper{
         if(list!=null)
             list.remove(listener);
     }
+    public void removeDeleteListener(String table,DbDeleteListener listener){
+        ArrayList list = deleteCallbacks.get(table);
+        if(list!=null)
+            list.remove(listener);
+    }
     public void appendUpdateListener(String table,DbUpdateListener listener){
         if(!updateCallbacks.containsKey(table))
             updateCallbacks.put(table, new ArrayList<DbUpdateListener>());
@@ -104,6 +109,22 @@ public class DbHelper extends SQLiteOpenHelper{
         if(insertCallbacks.containsKey(table)) {
             Log.e(TAG, table + "DbInsertListener size:"+insertCallbacks.get(table).size());
             for (DbInsertListener listener : insertCallbacks.get(table)) {
+                listener.callback(obj);
+            }
+        }
+    }
+
+    public void delete(String table,String whereClause,String[] whereArgs,Object obj){
+        switch (table){
+            case "t_sport_record":
+                //obj = new SportRecord(0,values.getAsInteger("sportid"),values.getAsFloat("amount"),values.getAsInteger("arg1"),values.getAsInteger("arg2"),0,new Date(values.getAsLong("time")*1000),values.getAsInteger("userid"));
+                break;
+        }
+        Log.e(TAG, "delete record:"+whereClause+"， "+whereArgs[0]);
+        db.delete(table,whereClause,whereArgs);
+
+        if(deleteCallbacks.containsKey(table)) {
+            for (DbDeleteListener listener : deleteCallbacks.get(table)) {
                 listener.callback(obj);
             }
         }

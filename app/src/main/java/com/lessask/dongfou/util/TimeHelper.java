@@ -248,10 +248,28 @@ public class TimeHelper {
         calendar.set(Calendar.MILLISECOND,0);
         return calendar.getTime();
     }
+    public static Date getDateStartOfMonth(Date time){
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
+        calendar.set(Calendar.DATE,1);
+        calendar.set(Calendar.HOUR_OF_DAY,0);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
+    }
 
     public static Date getDateStartOfDay(){
         Calendar calendar = Calendar.getInstance();
-        System.out.println(calendar.getTime());
+        calendar.set(Calendar.HOUR_OF_DAY,0);
+        calendar.set(Calendar.MINUTE,0);
+        calendar.set(Calendar.SECOND,0);
+        calendar.set(Calendar.MILLISECOND,0);
+        return calendar.getTime();
+    }
+    public static Date getDateStartOfDay(Date time){
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
         calendar.set(Calendar.HOUR_OF_DAY,0);
         calendar.set(Calendar.MINUTE,0);
         calendar.set(Calendar.SECOND,0);

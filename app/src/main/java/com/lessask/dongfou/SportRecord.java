@@ -5,7 +5,7 @@ import java.util.Date;
 /**
  * Created by JHuang on 2016/3/26.
  */
-public class SportRecord {
+public class SportRecord extends ResponseError {
     private int id;
     private int sportid;
     private float amount;

@@ -12,4 +12,5 @@ public class Config {
     public static String registerUrl = host+"/dongfou/register";
     public static String loginUrl = host+"/dongfou/login";
     public static String uploadRecordUrl = host+"/dongfou/upload/sportrecord";
+    public static String deleteRecordUrl = host+"/dongfou/sportrecord/delete";
 }

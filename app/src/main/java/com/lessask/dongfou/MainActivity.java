@@ -1,6 +1,7 @@
 package com.lessask.dongfou;
 
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -9,9 +10,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,10 +29,13 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.capricorn.ArcMenu;
 import com.google.gson.reflect.TypeToken;
+import com.lessask.dongfou.dialog.MenuDialog;
+import com.lessask.dongfou.dialog.OnSelectMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
 import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
+import com.lessask.dongfou.util.DbDeleteListener;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
 import com.lessask.dongfou.util.GlobalInfo;
@@ -45,7 +51,8 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    private XRecyclerView mRecyclerView;
+    //private XRecyclerView mRecyclerView;
+    private RecyclerView mRecyclerView;
     private SportRecordAdapter mRecyclerViewAdapter;
 
     private FragmentPagerAdapter mFragmentPagerAdapter;
@@ -54,13 +61,16 @@ public class MainActivity extends AppCompatActivity {
     private ArcMenu arcMenu;
 
     private GlobalInfo globalInfo = GlobalInfo.getInstance();
+    private VolleyHelper volleyHelper = VolleyHelper.getInstance();
 
     private final String TAG = MainActivity.class.getSimpleName();
     private final int GET_SPORT = 1;
     private final int ADD_SPORT = 2;
-    private final int LOGIN_REGISTER = 3;
-    private final int UPLOAD_RECORD_ERROR = 4;
-    private final int UPLOAD_RECORD_DONE = 5;
+    private final int DELETE_SPORT = 3;
+    private final int DELETE_SPORT_TONGJI = 4;
+    private final int LOGIN_REGISTER = 5;
+    private final int UPLOAD_RECORD_ERROR = 6;
+    private final int UPLOAD_RECORD_DONE = 7;
 
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
@@ -71,15 +81,27 @@ public class MainActivity extends AppCompatActivity {
     private SQLiteDatabase dbInstance;
 
     private Handler handler = new Handler(){
+        SportRecord sportRecord;
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what){
                 case ADD_SPORT:
                     Log.e(TAG, "ADD_SPORT");
-                    SportRecord sportRecord = (SportRecord)msg.obj;
+                    sportRecord = (SportRecord)msg.obj;
                     updateFragments(sportRecord);
                     mViewPager.setCurrentItem(0);
                     mRecyclerView.scrollToPosition(0);
+                    break;
+                case DELETE_SPORT:
+                    int deletePostion = msg.arg1;
+                    sportRecord = (SportRecord)msg.obj;
+                    mRecyclerViewAdapter.remove(deletePostion);
+                    mRecyclerViewAdapter.notifyItemRemoved(deletePostion);
+                    mRecyclerViewAdapter.notifyItemRangeChanged(deletePostion, mRecyclerViewAdapter.getItemCount());
+                    break;
+                case DELETE_SPORT_TONGJI:
+                    sportRecord = (SportRecord)msg.obj;
+                    updateFragmentsIfFirst(sportRecord);
                     break;
                 case UPLOAD_RECORD_ERROR:
                     setSyncMenuVisible(true);
@@ -107,6 +129,14 @@ public class MainActivity extends AppCompatActivity {
         sportGathers = new ArrayList<>();
         menuImages = new ArrayList<>();
 
+        //检查userid
+        if(globalInfo.getUserid()==0){
+
+            SharedPreferences baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
+            int useid = baseInfo.getInt("userid", 0);
+            globalInfo.setUserid(useid);
+
+        }
         //加载运动列表为空, 可能是globalInfo中的userid获取不到了
         loadDatas();
 
@@ -115,10 +145,10 @@ public class MainActivity extends AppCompatActivity {
         mToolbar.setTitleTextColor(getResources().getColor(R.color.white));
         setSupportActionBar(mToolbar);
 
-        mRecyclerView = (XRecyclerView) findViewById(R.id.list);
+        mRecyclerView = (RecyclerView) findViewById(R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         //View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
-        View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
+        //View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
 
         mFragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager());
         fragmentDatas = new ArrayList<>();
@@ -136,10 +166,49 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.setAdapter(mFragmentPagerAdapter);
 
         //mRecyclerView.addHeaderView(mHeaderView);
-        mRecyclerView.addFooterView(footView);
+        //mRecyclerView.addFooterView(footView);
         mRecyclerViewAdapter = new SportRecordAdapter(this);
         mRecyclerViewAdapter.setSportMap(sportMap);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
+        mRecyclerViewAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
+                @Override
+                public void onItemLongClick(View view, final int position) {
+                    final SportRecord sportRecord = mRecyclerViewAdapter.getItem(position);
+                    final Sport sport = loadSport(sportRecord.getSportid());
+                    final MenuDialog menuDialog = new MenuDialog(MainActivity.this, new String[]{"删除"},
+                            new OnSelectMenu() {
+                                @Override
+                                public void onSelectMenu(int menupos) {
+                                    Intent intent;
+                                    switch (menupos) {
+                                        case 0:
+                                            //删除课程
+                                            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                            builder.setMessage("确认删除吗？" + TimeHelper.date2Chat(sportRecord.getTime())+ ", name:" + sport.getName());
+                                            builder.setTitle("提示");
+                                            builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    dialog.dismiss();
+                                                    //网络协议
+                                                    deleteSportRecord(position);
+                                                }
+                                            });
+                                            builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    dialog.dismiss();
+                                                }
+                                            });
+                                            builder.create().show();
+                                            break;
+                                    }
+                                }
+                            });
+                    menuDialog.show();
+                }
+            });
+
         loadSportRecord();
         DbHelper.getInstance(getBaseContext()).appendInsertListener("t_sport_record", chatRecorInsertListener);
 
@@ -153,12 +222,63 @@ public class MainActivity extends AppCompatActivity {
 
 
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
+        DbHelper.getInstance(this).appendDeleteListener("t_sport_record", sportRecordDeleteListener);
         initMenu();
+    }
+
+    private void deleteSportRecord(final int deletePostion){
+        GsonRequest deleteActionRequest = new GsonRequest<>(Request.Method.POST, Config.deleteRecordUrl, SportRecord.class, new GsonRequest.PostGsonRequest<SportRecord>() {
+            @Override
+            public void onStart() {
+
+            }
+
+            @Override
+            public void onResponse(SportRecord response) {
+                if(response.getError()!=null){
+                    Toast.makeText(MainActivity.this, "error:"+response.getError(), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                SportRecord sportRecord = mRecyclerViewAdapter.getItem(deletePostion);
+                //删除数据库记录
+                deleteSportRecordDb(sportRecord);
+
+                //更新界面
+                Message msg = new Message();
+                msg.what=DELETE_SPORT;
+                msg.arg1=deletePostion;
+                msg.obj = sportRecord;
+                handler.sendMessage(msg);
+
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                Toast.makeText(MainActivity.this, "error:"+error.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                SportRecord record = mRecyclerViewAdapter.getItem(deletePostion);
+                record = loadOneSportRecordById(record.getId());
+                datas.put("token", globalInfo.getToken()+"");
+                datas.put("userid", globalInfo.getUserid()+"");
+                datas.put("id", record.getId() + "");
+                datas.put("sportid", record.getSportid() + "");
+                datas.put("seq", record.getSeq()+"");
+                return datas;
+            }
+        });
+
+        volleyHelper.addToRequestQueue(deleteActionRequest);
     }
 
     @Override
     protected void onDestroy() {
         DbHelper.getInstance(this).removeInsertListener("t_sport_record", sportRecordInsertListener);
+        DbHelper.getInstance(this).removeDeleteListener("t_sport_record", sportRecordDeleteListener);
         Log.e(TAG, "onDestroy");
         super.onDestroy();
     }
@@ -312,6 +432,42 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private DbDeleteListener sportRecordDeleteListener = new DbDeleteListener() {
+        @Override
+        public void callback(Object obj) {
+            SportRecord sportRecord = (SportRecord) obj;
+            //查询上一次的更新时间
+            Sport sport = loadSport(sportRecord.getSportid());
+
+            sport.setFrequency(sport.getFrequency()-1);
+            sport.setTotal(sport.getTotal()-sportRecord.getAmount());
+            sport.setSeq(0);
+            //查询是否还有同一天的记录
+            sport.setDays(sport.getDays());
+            //日均
+            sport.setAvg(sport.getTotal()/sport.getDays());
+            ContentValues values = new ContentValues();
+            values.put("total", sport.getTotal());
+            values.put("frequency", sport.getFrequency());
+            values.put("avg", sport.getAvg());
+            values.put("days", sport.getDays());
+            values.put("seq", sport.getSeq());
+            DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values,"id=? and userid=?",new String[]{sport.getId()+"",""+globalInfo.getUserid()});
+
+            //更新日统计, 月统计数据
+            updateSportDayDelete(sportRecord);
+            updateSportMonthDelete(sportRecord);
+
+            //更新界面
+            Message msg = new Message();
+            msg.what=DELETE_SPORT_TONGJI;
+            msg.obj = sportRecord;
+            handler.sendMessage(msg);
+
+
+        }
+    };
+
     private void updateFragments(SportRecord sportRecord){
         Log.e(TAG, "updateFragments");
         int i=0;
@@ -342,6 +498,30 @@ public class MainActivity extends AppCompatActivity {
         updateMenu();
     }
 
+    private void updateFragmentsIfFirst(SportRecord sportRecord){
+        int position=-1;
+        for (int i=0;i<sportGathers.size();i++){
+            SportGather sportGather = sportGathers.get(i);
+            if(sportGather.getSport().getId()==sportRecord.getSportid()){
+                sportGathers.remove(i);
+                position=i;
+                break;
+            }
+        }
+        if(position!=-1){
+            sportGathers.add(position, loadSportGatherFromDb(sportRecord.getSportid()));
+            //通知fragment更新
+            for(int i=0;i<fragmentDatas.size();i++){
+                FragmentData fragmentData = (FragmentData) fragmentDatas.get(i);
+                fragmentData.setSportGather(sportGathers.get(i));
+                fragmentData.update();
+            }
+
+            mFragmentPagerAdapter.setFragments(fragmentDatas);
+            mFragmentPagerAdapter.notifyDataSetChanged();
+        }
+    }
+
     private void updateMenu(){
         for (int i=0;i<menuImages.size();i++) {
             ImageView imageView = menuImages.get(i);
@@ -369,6 +549,19 @@ public class MainActivity extends AppCompatActivity {
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
 
+    private void deleteSportRecordDb(SportRecord record){
+        Log.e(TAG, "delete record:"+record.getId());
+        DbHelper.getInstance(this).delete("t_sport_record", "id=?",new String[]{record.getId()+""},record);
+    }
+
+    private void updateSportDayDelete(SportRecord record){
+        //每种运动的每天记录都是用一天开始的时间做索引的
+        long time=TimeHelper.getDateStartOfDay(record.getTime()).getTime() / 1000;
+        ContentValues values = new ContentValues();
+        String sql = "update t_sport_record_day set amount=amount-"+record.getAmount()+" where sportid="+record.getSportid()+" and userid="+globalInfo.getUserid()+" and time="+time;
+        DbHelper.getInstance(this).getDb().execSQL(sql);
+    }
+
     private void insertSportMonth(SportRecord record){
         ContentValues values = new ContentValues();
         values.put("sportid", record.getSportid());
@@ -380,7 +573,12 @@ public class MainActivity extends AppCompatActivity {
     }
     private void updateSportMonth(SportRecord record){
         long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
-        String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid();
+        String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid()+" and time="+time;
+        DbHelper.getInstance(this).getDb().execSQL(sql);
+    }
+    private void updateSportMonthDelete(SportRecord record){
+        long time = TimeHelper.getDateStartOfMonth(record.getTime()).getTime()/1000;
+        String sql = "update t_sport_record_month set amount=amount-"+record.getAmount()+" where sportid="+record.getSportid()+" and userid="+globalInfo.getUserid();
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
 
@@ -475,6 +673,19 @@ public class MainActivity extends AppCompatActivity {
         }
         mRecyclerViewAdapter.notifyDataSetChanged();
         cr.close();
+    }
+
+    private SportRecord loadOneSportRecordById(int id){
+
+        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport_record where id="+id, null);
+        SportRecord sportRecord = null;
+        while (cr.moveToNext()){
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
+            sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+        }
+        cr.close();
+        return sportRecord;
     }
 
     private DbInsertListener chatRecorInsertListener = new DbInsertListener() {

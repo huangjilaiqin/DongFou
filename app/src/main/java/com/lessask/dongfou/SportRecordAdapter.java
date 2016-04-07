@@ -26,6 +26,7 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
 
     private Context context;
     private Map<Integer, Sport> sportMap;
+    private OnItemLongClickListener onItemLongClickListener;
     public SportRecordAdapter(Context context) {
         this.context = context;
     }
@@ -40,6 +41,9 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         this.sportMap = sportMap;
     }
 
+    public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
+        this.onItemLongClickListener = onItemLongClickListener;
+    }
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
         SportRecord sportRecord = getItem(position);
@@ -71,6 +75,18 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         holder.detail.setText(detail.toString());
         holder.time.setText(TimeHelper.date2Chat(sportRecord.getTime()));
         holder.circle.setBackgroundColor(context.getResources().getColor(R.color.colorAccent1));
+
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                if (onItemLongClickListener != null) {
+                    Vibrator vib = (Vibrator) context.getSystemService(Service.VIBRATOR_SERVICE);
+                    vib.vibrate(10);
+                    onItemLongClickListener.onItemLongClick(view, position);
+                }
+                return false;
+            }
+        });
 
     }
 

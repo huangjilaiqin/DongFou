@@ -18,6 +18,15 @@ public class GlobalInfo {
     }
 
     private int userid;
+    private String token;
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
 
     public int getUserid() {
         return userid;
