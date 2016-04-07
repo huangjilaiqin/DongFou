@@ -107,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         sportGathers = new ArrayList<>();
         menuImages = new ArrayList<>();
 
+        //加载运动列表为空, 可能是globalInfo中的userid获取不到了
         loadDatas();
 
         Toolbar mToolbar = (Toolbar) findViewById(R.id.toolbar);

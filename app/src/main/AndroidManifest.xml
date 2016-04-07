@@ -14,7 +14,9 @@
         android:label="${name}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity" />
+        <activity android:name=".MainActivity"
+            android:screenOrientation="portrait"
+            />
         <activity
             android:name=".StartupActivity"
             android:screenOrientation="portrait">
@@ -24,9 +26,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SportsActivity" />
-        <activity android:name=".LoginRegisterActivity" />
-        <activity android:name=".FeedbackActivity"></activity>
+        <activity android:name=".SportsActivity"
+            android:screenOrientation="portrait"
+            />
+        <activity android:name=".LoginRegisterActivity"
+            android:screenOrientation="portrait"
+            />
+        <activity android:name=".FeedbackActivity"
+            android:screenOrientation="portrait"
+            />
     </application>
-
 </manifest>

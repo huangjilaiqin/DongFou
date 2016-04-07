@@ -89,6 +89,7 @@ public class StartupActivity extends AppCompatActivity {
         if(getSportSize()<5) {
             loadSports(DbHelper.getInstance(this).getDb());
         }else {
+            loadSportsSilence();
             handler.postDelayed(
                 new Runnable() {
                     @Override
@@ -177,41 +178,10 @@ public class StartupActivity extends AppCompatActivity {
                     enter.setVisibility(View.VISIBLE);
                 }else {
                     ArrayList<Sport> datas = response.getDatas();
-                    //入库,本地化
-                    for(int i=0;i<datas.size();i++){
-                        Sport sport = datas.get(i);
-
-                        ContentValues values = new ContentValues();
-                        values.put("id", sport.getId());
-                        values.put("name", sport.getName());
-                        values.put("image", sport.getImage());
-                        values.put("kind", sport.getKind());
-                        values.put("unit", sport.getUnit());
-                        values.put("maxnum", sport.getMaxnum());
-                        values.put("unit2", sport.getUnit2());
-                        values.put("maxnum2", sport.getMaxnum2());
-                        values.put("userid", globalInfo.getUserid());
-
-                        String[] args = new String[]{""+sport.getId(),""+globalInfo.getUserid()};
-                        Cursor cr = db.rawQuery("select 1 from t_sport where id=? and userid=?", args);
-                        if(cr.getCount()==0) {
-                            db.insert("t_sport", "", values);
-                            Log.e(TAG, "insert t_sport:" + sport.getName());
-                        }else{
-                            db.update("t_sport", values,"id=? and userid=?",args);
-                            Log.e(TAG, "update t_sport:" + sport.getName());
-                        }
-                    }
-
+                    updateSports(datas);
                     //
                     if(getSportSize()>=5) {
-                        handler.postDelayed(
-                                new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        handler.sendEmptyMessage(HANDLER_MAIN);
-                                    }
-                                }, 2000);
+                        handler.sendEmptyMessage(HANDLER_MAIN);
                     }else{
                         Toast.makeText(StartupActivity.this, "请检查网络", Toast.LENGTH_SHORT).show();
                         enter.setVisibility(View.VISIBLE);
@@ -234,5 +204,62 @@ public class StartupActivity extends AppCompatActivity {
             }
         });
         VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
+
+    private void loadSportsSilence(){
+        Type type = new TypeToken<ArrayListResponse<Sport>>() {}.getType();
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.sportUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
+            @Override
+            public void onStart() {}
+            @Override
+            public void onResponse(ArrayListResponse response) {
+                if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                }else {
+                    ArrayList<Sport> datas = response.getDatas();
+                    updateSports(datas);
+                }
+            }
+            @Override
+            public void onError(VolleyError error) {
+                Log.e(TAG, "" + error.getMessage());
+            }
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                return datas;
+            }
+        });
+        VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
+
+    private void updateSports(ArrayList<Sport> datas){
+        SQLiteDatabase db = DbHelper.getInstance(StartupActivity.this).getDb();
+        //入库,本地化
+        for(int i=0;i<datas.size();i++){
+            Sport sport = datas.get(i);
+
+            ContentValues values = new ContentValues();
+            values.put("id", sport.getId());
+            values.put("name", sport.getName());
+            values.put("image", sport.getImage());
+            values.put("kind", sport.getKind());
+            values.put("unit", sport.getUnit());
+            values.put("maxnum", sport.getMaxnum());
+            values.put("unit2", sport.getUnit2());
+            values.put("maxnum2", sport.getMaxnum2());
+            values.put("userid", globalInfo.getUserid());
+
+            String[] args = new String[]{""+sport.getId(),""+globalInfo.getUserid()};
+            Cursor cr = db.rawQuery("select 1 from t_sport where id=? and userid=?", args);
+            if(cr.getCount()==0) {
+                db.insert("t_sport", "", values);
+                Log.e(TAG, "insert t_sport:" + sport.getName());
+            }else{
+                db.update("t_sport", values,"id=? and userid=?",args);
+                Log.e(TAG, "update t_sport:" + sport.getName());
+            }
+        }
+
     }
 }
