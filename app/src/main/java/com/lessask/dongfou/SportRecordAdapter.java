@@ -81,7 +81,7 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
             public boolean onLongClick(View view) {
                 if (onItemLongClickListener != null) {
                     Vibrator vib = (Vibrator) context.getSystemService(Service.VIBRATOR_SERVICE);
-                    vib.vibrate(10);
+                    vib.vibrate(20);
                     onItemLongClickListener.onItemLongClick(view, position);
                 }
                 return false;
