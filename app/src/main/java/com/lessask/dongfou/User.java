@@ -4,17 +4,17 @@ package com.lessask.dongfou;
  * Created by laiqin on 16/4/3.
  */
 public class User extends ResponseError{
-    private int id;
+    private int userid;
 
-    public User(int id) {
-        this.id = id;
+    public User(int userid) {
+        this.userid = userid;
     }
 
-    public int getId() {
-        return id;
+    public int getUserid() {
+        return userid;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setUserid(int userid) {
+        this.userid = userid;
     }
 }

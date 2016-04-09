@@ -28,7 +28,7 @@ public class DbHelper extends SQLiteOpenHelper{
     private Map<String, ArrayList<DbUpdateListener>> updateCallbacks;
     private Map<String, ArrayList<DbDeleteListener>> deleteCallbacks;
     private static String DB_NAME = "lesask.db";
-    private static int DB_VERSION = 2;
+    private static int DB_VERSION = 3;
 
     public SQLiteDatabase getDb() {
         return db;
@@ -58,13 +58,16 @@ public class DbHelper extends SQLiteOpenHelper{
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if(oldVersion==1){
-            //增加userid字段
-            Log.e(TAG ,"db onUpgrade version:"+oldVersion);
-            db.execSQL("alter table t_sport add column userid integer not null default 0");
-            db.execSQL("alter table t_sport_record add column userid integer not null default 0");
-            db.execSQL("alter table t_sport_record_day add column userid integer not null default 0");
-            db.execSQL("alter table t_sport_record_month add column userid integer not null default 0");
+        switch (oldVersion){
+            case 1:
+                //增加userid字段
+                Log.e(TAG ,"db onUpgrade version:"+oldVersion);
+                db.execSQL("alter table t_sport add column userid integer not null default 0");
+                db.execSQL("alter table t_sport_record add column userid integer not null default 0");
+                db.execSQL("alter table t_sport_record_day add column userid integer not null default 0");
+                db.execSQL("alter table t_sport_record_month add column userid integer not null default 0");
+            case 2:
+                db.execSQL("create table t_notice(id integer primary key,kind integer not null,status integer not null default 0,title text not null,time integer not null,url text not null)");
         }
     }
 

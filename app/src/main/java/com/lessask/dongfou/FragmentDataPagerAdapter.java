@@ -4,22 +4,20 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 
-import java.awt.font.TextAttribute;
 import java.util.ArrayList;
 
 /**
  * Created by huangji on 2016/2/5.
  */
-public class FragmentPagerAdapter extends android.support.v4.app.FragmentPagerAdapter {
+public class FragmentDataPagerAdapter extends android.support.v4.app.FragmentPagerAdapter {
     private ArrayList<Fragment> fragmentDatas;
     private ArrayList<String> fragmentNames;
     private ArrayList<SportGather> sportGathers;
     private FragmentManager fm;
-    private String TAG = FragmentPagerAdapter.class.getSimpleName();
-    public FragmentPagerAdapter(FragmentManager fm) {
+    private String TAG = FragmentDataPagerAdapter.class.getSimpleName();
+    public FragmentDataPagerAdapter(FragmentManager fm) {
         super(fm);
         this.fm = fm;
         fragmentDatas = new ArrayList<>();

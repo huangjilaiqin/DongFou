@@ -7,6 +7,11 @@
         app:showAsAction="always"
         android:icon="@drawable/ic_sync"
         />
+    <item android:id="@+id/notifications"
+        android:title="通知"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_notifications"
+        />
     <item android:id="@+id/feedback"
         android:title="反馈"
         android:icon="@drawable/ic_feedback"

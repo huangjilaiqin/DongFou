@@ -4,6 +4,8 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
@@ -17,7 +19,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,6 +34,7 @@ import com.lessask.dongfou.dialog.MenuDialog;
 import com.lessask.dongfou.dialog.OnSelectMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
+import com.lessask.dongfou.model.Version;
 import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.DbDeleteListener;
@@ -55,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mRecyclerView;
     private SportRecordAdapter mRecyclerViewAdapter;
 
-    private FragmentPagerAdapter mFragmentPagerAdapter;
+    private FragmentDataPagerAdapter mFragmentDataPagerAdapter;
     private ViewPager mViewPager;
     private Menu menu;
     private ArcMenu arcMenu;
@@ -79,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
     private Bundle fragmentBundle = new Bundle();
     private DbHelper dbHelper;
     private SQLiteDatabase dbInstance;
+
+    SharedPreferences baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
+    SharedPreferences.Editor editor = baseInfo.edit();
 
     private Handler handler = new Handler(){
         SportRecord sportRecord;
@@ -148,9 +153,9 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView = (RecyclerView) findViewById(R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         //View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
-        //View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
+        //View footView = LayoutInflater.from(thi.inflate(R.layout.data_foot,mRecyclerView,false);
 
-        mFragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager());
+        mFragmentDataPagerAdapter = new FragmentDataPagerAdapter(getSupportFragmentManager());
         fragmentDatas = new ArrayList<>();
         for(int i=0;i<5;i++) {
             FragmentData fragmentData = new FragmentData();
@@ -159,11 +164,11 @@ public class MainActivity extends AppCompatActivity {
             fragmentData.setArguments(bundle);
             fragmentDatas.add(fragmentData);
         }
-        mFragmentPagerAdapter.setSportGathers(sportGathers);
-        mFragmentPagerAdapter.setFragments(fragmentDatas);
+        mFragmentDataPagerAdapter.setSportGathers(sportGathers);
+        mFragmentDataPagerAdapter.setFragments(fragmentDatas);
         //mViewPager = (ViewPager)mHeaderView.findViewById(R.id.viewpager);
         mViewPager = (ViewPager)findViewById(R.id.viewpager);
-        mViewPager.setAdapter(mFragmentPagerAdapter);
+        mViewPager.setAdapter(mFragmentDataPagerAdapter);
 
         //mRecyclerView.addHeaderView(mHeaderView);
         //mRecyclerView.addFooterView(footView);
@@ -210,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
             });
 
         loadSportRecord();
-        DbHelper.getInstance(getBaseContext()).appendInsertListener("t_sport_record", chatRecorInsertListener);
+        //DbHelper.getInstance(getBaseContext()).appendInsertListener("t_sport_record", chatRecorInsertListener);
 
         //CirclePageIndicator circlePageIndicator = (CirclePageIndicator)mHeaderView.findViewById(R.id.indicator);
         CirclePageIndicator circlePageIndicator = (CirclePageIndicator)findViewById(R.id.indicator);
@@ -220,10 +225,12 @@ public class MainActivity extends AppCompatActivity {
 
         arcMenu = (ArcMenu) findViewById(R.id.arc_menu);
 
-
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
         DbHelper.getInstance(this).appendDeleteListener("t_sport_record", sportRecordDeleteListener);
         initMenu();
+
+        Log.e(TAG, "versionName:"+getVersionName());
+        Log.e(TAG, "versionCode:"+getVersionCode());
     }
 
     private void deleteSportRecord(final int deletePostion){
@@ -422,12 +429,16 @@ public class MainActivity extends AppCompatActivity {
                 insertSportMonth(sportRecord);
             }
 
+            mRecyclerViewAdapter.appendToTop(sportRecord);
+            mRecyclerViewAdapter.notifyDataSetChanged();
+
             Message message = new Message();
             message.what=ADD_SPORT;
             message.obj = sportRecord;
             handler.sendMessage(message);
 
-            uploadRecord();
+            if(globalInfo.getUserid()!=0)
+                uploadRecord();
 
         }
     };
@@ -469,7 +480,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void updateFragments(SportRecord sportRecord){
-        Log.e(TAG, "updateFragments");
         int i=0;
         for (;i<sportGathers.size();i++){
             SportGather sportGather = sportGathers.get(i);
@@ -490,11 +500,10 @@ public class MainActivity extends AppCompatActivity {
             fragmentData.setSportGather(sportGathers.get(i));
             Log.e(TAG, "total:"+sportGathers.get(i).getSport().getTotal());
             fragmentData.update();
-            Log.e(TAG, "update fragment:"+fragmentData);
         }
 
-        mFragmentPagerAdapter.setFragments(fragmentDatas);
-        mFragmentPagerAdapter.notifyDataSetChanged();
+        mFragmentDataPagerAdapter.setFragments(fragmentDatas);
+        mFragmentDataPagerAdapter.notifyDataSetChanged();
         updateMenu();
     }
 
@@ -517,8 +526,8 @@ public class MainActivity extends AppCompatActivity {
                 fragmentData.update();
             }
 
-            mFragmentPagerAdapter.setFragments(fragmentDatas);
-            mFragmentPagerAdapter.notifyDataSetChanged();
+            mFragmentDataPagerAdapter.setFragments(fragmentDatas);
+            mFragmentDataPagerAdapter.notifyDataSetChanged();
         }
     }
 
@@ -734,6 +743,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void uploadRecord(){
+
         String sql = "select * from t_sport_record where seq=0;";
         //select * from t_sport_record;
         Cursor cr = dbInstance.rawQuery(sql, null);
@@ -800,6 +810,40 @@ public class MainActivity extends AppCompatActivity {
         VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
     }
 
+    private void checkVersionUpdate(){
+        final int versionCode = getVersionCode();
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.checkUpdate , Version.class, new GsonRequest.PostGsonRequest<Version>() {
+            @Override
+            public void onStart() {
+                //显示同步转圈圈动画
+            }
+            @Override
+            public void onResponse(Version response) {
+                Log.e(TAG, "response:" + response.toString());
+                if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                }else {
+                    int newVersionCode = response.getVersioncode();
+
+                    handler.sendEmptyMessage(UPLOAD_RECORD_DONE);
+                }
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                Log.e(TAG, "检查版本更新, 网络错误:"+error);
+            }
+
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                datas.put("versioncode",versionCode+"");
+                return datas;
+            }
+        });
+        VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -828,18 +872,22 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
+        Intent intent=null;
         switch (item.getItemId()){
             case R.id.sync:
                 if(globalInfo.getUserid()==0){
-                    Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                    intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
                     startActivityForResult(intent, LOGIN_REGISTER);
                 }else {
                     uploadRecord();
                 }
                 break;
+            case R.id.notifications:
+                intent = new Intent(MainActivity.this, NotificationActivity.class);
+                startActivity(intent);
+                break;
             case R.id.feedback:
-                Intent intent = new Intent(MainActivity.this, FeedbackActivity.class);
+                intent = new Intent(MainActivity.this, FeedbackActivity.class);
                 startActivity(intent);
                 break;
             case R.id.setting:
@@ -847,4 +895,37 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+    private String getVersionName(){
+        // 获取packagemanager的实例
+        PackageManager packageManager = getPackageManager();
+        // getPackageName()是你当前类的包名，0代表是获取版本信息
+        PackageInfo packInfo = null;
+        try {
+            packInfo = packageManager.getPackageInfo(getPackageName(), 0);
+        }catch (Exception e){
+
+        }
+        if(packInfo!=null)
+            return packInfo.versionName;
+        else
+            return "###";
+    }
+    private int getVersionCode(){
+        // 获取packagemanager的实例
+        PackageManager packageManager = getPackageManager();
+        // getPackageName()是你当前类的包名，0代表是获取版本信息
+        PackageInfo packInfo=null;
+        try {
+            packInfo = packageManager.getPackageInfo(getPackageName(), 0);
+        }catch (Exception e){
+
+        }
+        if(packInfo!=null)
+            return packInfo.versionCode;
+        else
+            return 0;
+    }
 }
+
+
+

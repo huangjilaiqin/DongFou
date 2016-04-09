@@ -59,7 +59,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
                                 Toast.makeText(LoginRegisterActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
                             }else {
                                 Intent intent = new Intent();
-                                intent.putExtra("userid", response.getId());
+                                intent.putExtra("userid", response.getUserid());
                                 setResult(RESULT_OK, intent);
                                 finish();
                             }
@@ -97,7 +97,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
                             Toast.makeText(LoginRegisterActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
                         }else {
                             Intent intent = new Intent();
-                            intent.putExtra("userid", response.getId());
+                            intent.putExtra("userid", response.getUserid());
                             setResult(RESULT_OK, intent);
                             finish();
                         }
