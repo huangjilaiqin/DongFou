@@ -4,22 +4,38 @@
     android:layout_height="wrap_content"
     android:id="@+id/friend_item">
 
-    <TextView
-        android:id="@+id/title"
+    <LinearLayout
+        android:id="@+id/title_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="8dp"
-        android:textSize="18sp"
-        android:textColor="@color/black_35"
-        android:text="动否1.1.5主要更新"
-        />
+        >
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="@color/black_35"
+            android:text="动否1.1.5主要更新"
+            />
+        <TextView
+            android:id="@+id/tip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:textColor="@color/red_fab"
+            android:text="(最新版)"
+            android:visibility="invisible"
+            />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@id/title"
-        android:layout_below="@id/title"
+        android:layout_alignLeft="@id/title_layout"
+        android:layout_below="@id/title_layout"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
         android:text="4月13日"
@@ -31,6 +47,7 @@
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:layout_marginRight="16dp"
-        android:text="更新"
+        android:text="查看详情"
+        android:visibility="invisible"
         />
 </RelativeLayout>

@@ -1,6 +1,7 @@
 package com.lessask.dongfou;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,6 +19,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,6 +32,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.capricorn.ArcMenu;
 import com.google.gson.reflect.TypeToken;
+import com.lessask.dongfou.dialog.LoadingDialog;
 import com.lessask.dongfou.dialog.MenuDialog;
 import com.lessask.dongfou.dialog.OnSelectMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
@@ -73,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     private final int LOGIN_REGISTER = 5;
     private final int UPLOAD_RECORD_ERROR = 6;
     private final int UPLOAD_RECORD_DONE = 7;
+    private final int CHECK_VERSION = 8;
 
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
@@ -82,8 +86,8 @@ public class MainActivity extends AppCompatActivity {
     private DbHelper dbHelper;
     private SQLiteDatabase dbInstance;
 
-    SharedPreferences baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
-    SharedPreferences.Editor editor = baseInfo.edit();
+    SharedPreferences baseInfo;
+    SharedPreferences.Editor editor;
 
     private Handler handler = new Handler(){
         SportRecord sportRecord;
@@ -114,12 +118,24 @@ public class MainActivity extends AppCompatActivity {
                 case UPLOAD_RECORD_DONE:
                     setSyncMenuVisible(hasNotSyncRecord());
                     break;
+                case CHECK_VERSION:
+                    if(msg.arg1==1){
+                        setNotificationStatus(true);
+                    }
+                    break;
             }
         }
     };
 
     private void setSyncMenuVisible(boolean visible){
-        menu.getItem(0).setVisible(visible);
+        menu.findItem(R.id.sync).setVisible(visible);
+    }
+    private void setNotificationStatus(boolean active){
+        if(active){
+            menu.findItem(R.id.notifications).setIcon(R.drawable.ic_notifications_active);
+        }else {
+            menu.findItem(R.id.notifications).setIcon(R.drawable.ic_notifications);
+        }
     }
 
     @Override
@@ -127,6 +143,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Log.e(TAG, "oncreate savedInstanceState:" + savedInstanceState);
         setContentView(R.layout.activity_main);
+        baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
+        editor = baseInfo.edit();
 
         dbHelper = DbHelper.getInstance(this);
         dbInstance = dbHelper.getDb();
@@ -137,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
         //检查userid
         if(globalInfo.getUserid()==0){
 
-            SharedPreferences baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
             int useid = baseInfo.getInt("userid", 0);
             globalInfo.setUserid(useid);
 
@@ -189,7 +206,29 @@ public class MainActivity extends AppCompatActivity {
                                         case 0:
                                             //删除课程
                                             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                                            builder.setMessage("确认删除吗？" + TimeHelper.date2Chat(sportRecord.getTime())+ ", name:" + sport.getName());
+                                            StringBuilder detail = new StringBuilder();
+                                            int kind = sport.getKind();
+                                            if(kind==1){
+                                                String unit = sport.getUnit();
+                                                if(unit.equals("次"))
+                                                    detail.append((int)sportRecord.getArg1());
+                                                else
+                                                    detail.append(sportRecord.getArg1());
+                                                detail.append(unit);
+                                            }else if(kind==2){
+                                                String unit = sport.getUnit();
+                                                if(unit.equals("次"))
+                                                    detail.append((int)sportRecord.getArg1());
+                                                else
+                                                    detail.append(sportRecord.getArg1());
+                                                detail.append(unit);
+                                                detail.append(" ");
+                                                detail.append(sportRecord.getArg2());
+                                                detail.append(sport.getUnit2());
+                                                detail.append("/");
+                                                detail.append(sport.getUnit());
+                                            }
+                                            builder.setMessage("确认删除？" + sport.getName()+ ":"+detail.toString()+" 的记录");
                                             builder.setTitle("提示");
                                             builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
                                                 @Override
@@ -231,38 +270,41 @@ public class MainActivity extends AppCompatActivity {
 
         Log.e(TAG, "versionName:"+getVersionName());
         Log.e(TAG, "versionCode:"+getVersionCode());
+        checkVersionUpdate();
     }
 
     private void deleteSportRecord(final int deletePostion){
+        final LoadingDialog loadingDialog = new LoadingDialog(this);
+        loadingDialog.setCancelable(false);
         GsonRequest deleteActionRequest = new GsonRequest<>(Request.Method.POST, Config.deleteRecordUrl, SportRecord.class, new GsonRequest.PostGsonRequest<SportRecord>() {
             @Override
             public void onStart() {
-
+                loadingDialog.show();
             }
 
             @Override
             public void onResponse(SportRecord response) {
                 if(response.getError()!=null){
                     Toast.makeText(MainActivity.this, "error:"+response.getError(), Toast.LENGTH_SHORT).show();
-                    return;
+                }else {
+                    SportRecord sportRecord = mRecyclerViewAdapter.getItem(deletePostion);
+                    //删除数据库记录
+                    deleteSportRecordDb(sportRecord);
+
+                    //更新界面
+                    Message msg = new Message();
+                    msg.what = DELETE_SPORT;
+                    msg.arg1 = deletePostion;
+                    msg.obj = sportRecord;
+                    handler.sendMessage(msg);
                 }
-
-                SportRecord sportRecord = mRecyclerViewAdapter.getItem(deletePostion);
-                //删除数据库记录
-                deleteSportRecordDb(sportRecord);
-
-                //更新界面
-                Message msg = new Message();
-                msg.what=DELETE_SPORT;
-                msg.arg1=deletePostion;
-                msg.obj = sportRecord;
-                handler.sendMessage(msg);
-
+                loadingDialog.dismiss();
             }
 
             @Override
             public void onError(VolleyError error) {
-                Toast.makeText(MainActivity.this, "error:"+error.toString(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "删除记录需联网", Toast.LENGTH_SHORT).show();
+                loadingDialog.dismiss();
             }
 
             @Override
@@ -719,8 +761,6 @@ public class MainActivity extends AppCompatActivity {
                     int userid = data.getIntExtra("userid", -1);
                     //记录userid
                     globalInfo.setUserid(userid);
-                    SharedPreferences baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
-                    SharedPreferences.Editor editor = baseInfo.edit();
                     editor.putInt("userid", userid);
                     editor.commit();
 
@@ -794,7 +834,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(VolleyError error) {
-                Toast.makeText(MainActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "同步记录, 网络错误:"+error);
                 handler.sendEmptyMessage(UPLOAD_RECORD_ERROR);
             }
@@ -823,9 +863,20 @@ public class MainActivity extends AppCompatActivity {
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
                     Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
                 }else {
+                    Message msg = new Message();
+                    msg.what=CHECK_VERSION;
+                    msg.arg1=0;
                     int newVersionCode = response.getVersioncode();
-
-                    handler.sendEmptyMessage(UPLOAD_RECORD_DONE);
+                    editor.putInt("newestVersion", newVersionCode);
+                    editor.commit();
+                    int currentVersionCode = getVersionCode();
+                    if(currentVersionCode<newVersionCode){
+                        int checkVersionCode = baseInfo.getInt("checkVersionCode", 0);
+                        if(checkVersionCode==0 || checkVersionCode<newVersionCode){
+                            msg.arg1=1;
+                        }
+                    }
+                    handler.sendMessage(msg);
                 }
             }
 
@@ -837,7 +888,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public Map getPostData() {
                 Map datas = new HashMap();
+                datas.put("userid", globalInfo.getUserid()+"");
                 datas.put("versioncode",versionCode+"");
+                datas.put("deviceid", getDeviceId());
                 return datas;
             }
         });
@@ -883,14 +936,16 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.notifications:
+                setNotificationStatus(false);
+                editor.putInt("checkVersionCode", baseInfo.getInt("newestVersion", getVersionCode()));
+                editor.commit();
                 intent = new Intent(MainActivity.this, NotificationActivity.class);
+                intent.putExtra("versionCode", getVersionCode());
                 startActivity(intent);
                 break;
             case R.id.feedback:
                 intent = new Intent(MainActivity.this, FeedbackActivity.class);
                 startActivity(intent);
-                break;
-            case R.id.setting:
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -924,6 +979,17 @@ public class MainActivity extends AppCompatActivity {
             return packInfo.versionCode;
         else
             return 0;
+    }
+
+    private String getDeviceId(){
+        String deviceId = baseInfo.getString("deviceid", "");
+        if(deviceId.length()==0){
+            final TelephonyManager tm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
+            deviceId = tm.getDeviceId();
+            editor.putString("deviceid", deviceId);
+            editor.commit();
+        }
+        return deviceId;
     }
 }
 

@@ -18,11 +18,16 @@ import java.util.Map;
 
 public class GsonRequest<T> extends Request<T> {
     private final String TAG = GsonRequest.class.getSimpleName();
-    private final Gson gson = new Gson();
+    private Gson gson = new Gson();
     private final Class<T> clazz;
     private final Type type;
     private final Response.Listener<T> listener;
     private PostGsonRequest<T> postGsonRequest;
+
+
+    public void setGson(final Gson gson) {
+        this.gson = gson;
+    }
 
     public GsonRequest(int method, String url, Class<T> clazz, final PostGsonRequest<T> postGsonRequest) {
         super(method, url, new Response.ErrorListener() {

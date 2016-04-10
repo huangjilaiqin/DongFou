@@ -26,8 +26,13 @@ public class NoticesAdapter extends BaseRecyclerAdapter<Notice,NoticesAdapter.Vi
     private OnItemClickListener onItemClickListener;
     private OnItemLongClickListener onItemLongClickListener;
     private Context context;
+    private int currentVersionCode;
     public NoticesAdapter(Context context) {
         this.context = context;
+    }
+
+    public void setCurrentVersionCode(int currentVersionCode) {
+        this.currentVersionCode = currentVersionCode;
     }
 
     public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
@@ -49,6 +54,22 @@ public class NoticesAdapter extends BaseRecyclerAdapter<Notice,NoticesAdapter.Vi
         holder.title.setText(notice.getTitle());
         holder.time.setText(TimeHelper.date2Chat(notice.getTime()));
 
+        if(position==0){
+            holder.action.setVisibility(View.VISIBLE);
+            holder.tip.setText("(最新版)");
+            holder.tip.setVisibility(View.VISIBLE);
+            if(notice.getArg1()==currentVersionCode)
+                holder.tip.setText("(已是最新版)");
+
+        }else if(notice.getArg1()==currentVersionCode){
+            holder.action.setVisibility(View.INVISIBLE);
+            holder.tip.setText("(本机版本)");
+            holder.tip.setVisibility(View.VISIBLE);
+        }else {
+            holder.action.setVisibility(View.INVISIBLE);
+            holder.tip.setVisibility(View.INVISIBLE);
+        }
+
         holder.action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -63,6 +84,7 @@ public class NoticesAdapter extends BaseRecyclerAdapter<Notice,NoticesAdapter.Vi
     public static class ViewHolder extends RecyclerView.ViewHolder{
         View itemView;
         TextView title;
+        TextView tip;
         TextView time;
         Button action;
 
@@ -70,6 +92,7 @@ public class NoticesAdapter extends BaseRecyclerAdapter<Notice,NoticesAdapter.Vi
             super(itemView);
             this.itemView = itemView;
             title = (TextView) itemView.findViewById(R.id.title);
+            tip = (TextView) itemView.findViewById(R.id.tip);
             time =(TextView)itemView.findViewById(R.id.time);
             action = (Button)itemView.findViewById(R.id.action);
         }

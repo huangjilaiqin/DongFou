@@ -36,7 +36,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="24sp"
-                android:textColor="@color/main_color_dark"
+                android:textColor="@color/main_color"
                 android:layout_gravity="center_horizontal"
                 android:text="动否"
                 />
@@ -61,7 +61,7 @@
         <EditText
             android:id="@+id/passwd"
             android:inputType="textPassword"
-            android:hint="密码"
+            android:hint="密码: 6-18数字或字母组成"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
         <LinearLayout

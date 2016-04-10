@@ -36,8 +36,10 @@ public class NotificationActivity extends AppCompatActivity implements FragmentF
 
         viewPager = (ViewPager) findViewById(R.id.viewpager);
 
+        int versionCode = getIntent().getIntExtra("versionCode", 0);
+
         MyFragmentDataPagerAdapter myFragmentPagerAdapter = new MyFragmentDataPagerAdapter(getSupportFragmentManager());
-        myFragmentPagerAdapter.addFragment(new FragmentNotices(), "系统通知");
+        myFragmentPagerAdapter.addFragment(FragmentNotices.newInstance(this,versionCode), "系统通知");
         myFragmentPagerAdapter.addFragment(new FragmentFeedback(), "反馈通知");
         viewPager.setAdapter(myFragmentPagerAdapter);
 

@@ -140,7 +140,7 @@ public class StartupActivity extends AppCompatActivity {
         //每月的汇总表
         db.execSQL("create table t_sport_record_month(id int primary key,sportid int not null,amount real not null,time int NOT NULL,seq int not null default 0,userid int not null default 0)");
 
-        db.execSQL("create table t_notice(id integer primary key,kind integer not null,title text not null,time integer not null,url text not null)");
+        db.execSQL("create table t_notice(id integer primary key,kind integer not null,title text not null,status integer not null default 0,time integer not null,url text not null,arg1 integer,arg2 text)");
 
         Log.e(TAG, "create db");
 

@@ -12,14 +12,34 @@ public class Notice {
     private int status;
     private Date time;
     private String url;
+    private int arg1;
+    private String arg2;
 
-    public Notice(int id,String title, int kind, int status, Date time, String url) {
+    public Notice(int id,String title, int kind, int status, Date time, String url,int arg1,String arg2) {
         this.id = id;
         this.title=title;
         this.kind = kind;
         this.status = status;
         this.time = time;
         this.url = url;
+        this.arg1=arg1;
+        this.arg2=arg2;
+    }
+
+    public int getArg1() {
+        return arg1;
+    }
+
+    public void setArg1(int arg1) {
+        this.arg1 = arg1;
+    }
+
+    public String getArg2() {
+        return arg2;
+    }
+
+    public void setArg2(String arg2) {
+        this.arg2 = arg2;
     }
 
     public String getTitle() {

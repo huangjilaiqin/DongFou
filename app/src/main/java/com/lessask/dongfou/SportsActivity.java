@@ -118,7 +118,7 @@ public class SportsActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                Log.e(TAG, "search:"+newText);
+                Log.e(TAG, "ic_search:"+newText);
                 List<Sport> searchResult;
                 if(newText.length()==0){
                     searchResult = originSports;

@@ -4,7 +4,7 @@
     tools:context=".MainActivity">
     <item
         android:id="@+id/action_search"
-        android:icon="@drawable/search"
+        android:icon="@drawable/ic_search"
         android:title="Add"
         app:showAsAction="collapseActionView|always"
         android:actionViewClass="android.widget.SearchView"

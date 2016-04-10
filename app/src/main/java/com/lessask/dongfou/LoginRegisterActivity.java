@@ -15,6 +15,7 @@ import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.GlobalInfo;
 
+import java.awt.font.TextAttribute;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,8 +46,19 @@ public class LoginRegisterActivity extends AppCompatActivity {
         passwd = (EditText) findViewById(R.id.passwd);
 
         findViewById(R.id.login).setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
+                final String mailStr = mail.getText().toString().trim();
+                final String passwdStr = passwd.getText().toString().trim();
+                if(mailStr.length()==0){
+                    Toast.makeText(LoginRegisterActivity.this, "告诉我你的邮箱好吗",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if(passwdStr.length()<6 || passwdStr.length()>18){
+                    Toast.makeText(LoginRegisterActivity.this, "请用6-18位数字或字母作为密码哟",Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,Config.loginUrl,User.class, new GsonRequest.PostGsonRequest<User>() {
                     @Override
                     public void onStart() {
@@ -85,6 +97,20 @@ public class LoginRegisterActivity extends AppCompatActivity {
         findViewById(R.id.register).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                final String mailStr = mail.getText().toString().trim();
+                final String passwdStr = passwd.getText().toString().trim();
+                if(mailStr.length()==0){
+                    Toast.makeText(LoginRegisterActivity.this, "告诉我你的邮箱好吗",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if(passwdStr.length()<6 || passwdStr.length()>18){
+                    Toast.makeText(LoginRegisterActivity.this, "请用6-18位数字或字母作为密码哟",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if(!checkEmail(mailStr)){
+                    Toast.makeText(LoginRegisterActivity.this, "亲爱de,你的邮箱好像不对哟",Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,Config.registerUrl,User.class, new GsonRequest.PostGsonRequest<User>() {
                     @Override
                     public void onStart() {
@@ -111,13 +137,34 @@ public class LoginRegisterActivity extends AppCompatActivity {
                     @Override
                     public Map getPostData() {
                         Map datas = new HashMap();
-                        datas.put("mail", mail.getText().toString().trim());
-                        datas.put("passwd", passwd.getText().toString().trim());
+                        datas.put("mail", mailStr);
+                        datas.put("passwd", passwdStr);
                         return datas;
                     }
                 });
                 VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
             }
         });
+    }
+
+    public boolean checkEmail(String email) {
+        //if (email.matches("[\\w\\.\\-]{3,18}@([A-Za-z0-9]{1}[A-Za-z0-9\\-]{0,}[A-Za-z0-9]{1}\\.)+[A-Za-z]+")) {
+        Log.e(TAG, "#"+email+"#");
+        if (email.matches("[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w\\-]+")) {
+            Log.e(TAG, "mail match");
+            return true;
+        }else {
+            Log.e(TAG, "mail not match");
+        }
+        /*
+        IsEMailResult result = IsEMail.is_email_verbose(email, true);
+        switch (result.getState()) {
+            case OK:
+                return true;
+            default:
+                return false;
+        }
+        */
+        return false;
     }
 }
