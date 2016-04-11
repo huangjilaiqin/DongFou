@@ -151,7 +151,7 @@ public class StartupActivity extends AppCompatActivity {
     private int getSportSize(){
         String sql = "select count(*) from t_sport;";
         //select * from t_sport_record;
-        Cursor cr = DbHelper.getInstance(StartupActivity.this).getDb().rawQuery(sql, null);
+        Cursor cr = DbHelper.getInstance(this).getDb().rawQuery(sql, null);
 
         int count = 0;
         if(cr.moveToNext()){
