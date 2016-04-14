@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     private final int UPLOAD_RECORD_ERROR = 6;
     private final int UPLOAD_RECORD_DONE = 7;
     private final int CHECK_VERSION = 8;
+    private final int LOGOUT = 9;
 
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
@@ -152,12 +153,12 @@ public class MainActivity extends AppCompatActivity {
         sportGathers = new ArrayList<>();
         menuImages = new ArrayList<>();
 
-        //检查userid
+        //程序后台太久，单例的内容也会被删除, 检查userid
         if(globalInfo.getUserid()==0){
-
             int useid = baseInfo.getInt("userid", 0);
             globalInfo.setUserid(useid);
-
+            String token = baseInfo.getString("token", "");
+            globalInfo.setToken(token);
         }
         //加载运动列表为空, 可能是globalInfo中的userid获取不到了
         loadDatas();
@@ -358,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, SportsActivity.class);
-                startActivityForResult(intent,GET_SPORT);
+                startActivityForResult(intent, GET_SPORT);
             }
         });
     }
@@ -418,6 +419,33 @@ public class MainActivity extends AppCompatActivity {
         values.put("userid", "" + globalInfo.getUserid());
         //long id = dbInstance.insert("t_sport_record", null, values);
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
+
+        if(globalInfo.getUserid()==0 && !baseInfo.getBoolean("logintip", false)){
+            editor.putBoolean("logintip", true);
+            editor.commit();
+            tipLoginDialog();
+        }
+    }
+
+    private void tipLoginDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setMessage("登录后,您的数据将被永久免费保存");
+        builder.setTitle("提示");
+        builder.setPositiveButton("立即登录", new DialogInterface.OnClickListener() {
+             @Override
+             public void onClick(DialogInterface dialog, int which) {
+                  dialog.dismiss();
+                  Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                  startActivityForResult(intent, LOGIN_REGISTER);
+             }
+        });
+        builder.setNegativeButton("稍后", new DialogInterface.OnClickListener() {
+             @Override
+             public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+             }
+        });
+        builder.create().show();
     }
 
     private DbInsertListener sportRecordInsertListener = new DbInsertListener() {
@@ -602,7 +630,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void deleteSportRecordDb(SportRecord record){
         Log.e(TAG, "delete record:"+record.getId());
-        DbHelper.getInstance(this).delete("t_sport_record", "id=?",new String[]{record.getId()+""},record);
+        DbHelper.getInstance(this).delete("t_sport_record", "id=?", new String[]{record.getId() + ""}, record);
     }
 
     private void updateSportDayDelete(SportRecord record){
@@ -716,7 +744,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadSportRecord(){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport_record where datetime(time)>=datetime('now') order by time desc", null);
+        Cursor cr = db.rawQuery("select * from t_sport_record where userid="+globalInfo.getUserid()+" and datetime(time)>=datetime('now') order by time desc", null);
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
             SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
@@ -759,9 +787,12 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case LOGIN_REGISTER:
                     int userid = data.getIntExtra("userid", -1);
+                    String token = data.getStringExtra("token");
+                    boolean isRegister = data.getBooleanExtra("isregister",false);
                     //记录userid
                     globalInfo.setUserid(userid);
                     editor.putInt("userid", userid);
+                    editor.putString("token", token);
                     editor.commit();
 
                     //更新userid为0的记录
@@ -775,6 +806,7 @@ public class MainActivity extends AppCompatActivity {
                     dbInstance.execSQL(sql);
 
                     uploadRecord();
+                    menu.findItem(R.id.login_logout).setTitle("退出帐号");
                     break;
                 default:
                     break;
@@ -784,7 +816,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadRecord(){
 
-        String sql = "select * from t_sport_record where seq=0;";
+        String sql = "select * from t_sport_record where userid="+globalInfo.getUserid()+" and seq=0;";
         //select * from t_sport_record;
         Cursor cr = dbInstance.rawQuery(sql, null);
         final ArrayList<SportRecord> sportRecords = new ArrayList<>();
@@ -813,7 +845,7 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(ArrayListResponse response) {
                 Log.e(TAG, "response:" + response.toString());
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
-                    Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                    Log.e(TAG, "onResponse upload record error:" + response.getError() + ", " + response.getErrno());
                     handler.sendEmptyMessage(UPLOAD_RECORD_ERROR);
                 }else {
                     ArrayList<SportRecord> datas = response.getDatas();
@@ -843,6 +875,8 @@ public class MainActivity extends AppCompatActivity {
             public Map getPostData() {
                 Map datas = new HashMap();
                 Log.e(TAG, "getPostData");
+                datas.put("userid", globalInfo.getUserid()+"");
+                datas.put("token", globalInfo.getToken()+"");
                 datas.put("records",TimeHelper.gsonWithDate().toJson(sportRecords));
                 return datas;
             }
@@ -882,14 +916,14 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(VolleyError error) {
-                Log.e(TAG, "检查版本更新, 网络错误:"+error);
+                Log.e(TAG, "检查版本更新, 网络错误:" + error);
             }
 
             @Override
             public Map getPostData() {
                 Map datas = new HashMap();
                 datas.put("userid", globalInfo.getUserid()+"");
-                datas.put("versioncode",versionCode+"");
+                datas.put("versioncode", versionCode + "");
                 datas.put("deviceid", getDeviceId());
                 return datas;
             }
@@ -902,19 +936,23 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         this.menu = menu;
         setSyncMenuVisible(hasNotSyncRecord());
-        if(globalInfo.getUserid()==0)
+        if (globalInfo.getUserid() == 0 || globalInfo.getToken()==null || globalInfo.getToken()==""){
             setSyncMenuVisible(true);
+            menu.findItem(R.id.login_logout).setTitle("登录");
+        }else {
+            menu.findItem(R.id.login_logout).setTitle("退出帐号");
+        }
         return true;
     }
 
     private boolean hasNotSyncRecord(){
-        String sql = "select count(*) from t_sport_record where seq=0;";
+        String sql = "select count(*) from t_sport_record where userid="+globalInfo.getUserid()+" and seq=0;";
         //select * from t_sport_record;
         Cursor cr = dbInstance.rawQuery(sql, null);
 
         if(cr.moveToNext()){
             int count = cr.getInt(0);
-            Log.e(TAG, "not sync record size:"+count);
+            Log.e(TAG, "not sync record size:" + count);
             if(count>0)
                 return true;
             else
@@ -928,7 +966,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent=null;
         switch (item.getItemId()){
             case R.id.sync:
-                if(globalInfo.getUserid()==0){
+                if(globalInfo.getUserid()==0 || globalInfo.getToken()==null || globalInfo.getToken()==""){
                     intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
                     startActivityForResult(intent, LOGIN_REGISTER);
                 }else {
@@ -947,8 +985,94 @@ public class MainActivity extends AppCompatActivity {
                 intent = new Intent(MainActivity.this, FeedbackActivity.class);
                 startActivity(intent);
                 break;
+            case R.id.login_logout:
+                if(globalInfo.getUserid()==0){
+                    intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                    startActivityForResult(intent, LOGIN_REGISTER);
+                }else {
+                    //清除用户登录信息
+                    logout();
+                }
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void logout() {
+        Log.e(TAG, Config.logoutUrl);
+        String sql = "select * from t_sport_record where userid=" + globalInfo.getUserid() + " and seq=0;";
+        //select * from t_sport_record;
+        Cursor cr = dbInstance.rawQuery(sql, null);
+        if (cr.getCount() > 0) {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setMessage("你有尚未同步的记录");
+            builder.setTitle("警告");
+            builder.setPositiveButton("仍然退出", new DialogInterface.OnClickListener() {
+                 @Override
+                 public void onClick(DialogInterface dialog, int which) {
+                      dialog.dismiss();
+                      logoutRequest();
+                 }
+            });
+            builder.setNegativeButton("同步", new DialogInterface.OnClickListener() {
+                 @Override
+                 public void onClick(DialogInterface dialog, int which) {
+                     dialog.dismiss();
+                     uploadRecord();
+                 }
+            });
+            builder.create().show();
+        }else {
+            logoutRequest();
+        }
+    }
+
+    private void logoutRequest() {
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST,Config.logoutUrl,ResponseError.class, new GsonRequest.PostGsonRequest<ResponseError>() {
+            LoadingDialog loadingDialog = new LoadingDialog(MainActivity.this);
+            @Override
+            public void onStart() {
+                    loadingDialog.show();
+                }
+                @Override
+                public void onResponse(ResponseError response) {
+                    Log.e(TAG, "response:" + response.toString());
+                    if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                        Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                        Toast.makeText(MainActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
+                        loadingDialog.dismiss();
+                    }else {
+                        loadingDialog.dismiss();
+                        editor.putInt("userid", 0);
+                        editor.putString("token", "");
+                        editor.commit();
+
+                        Intent intent = new Intent(MainActivity.this, StartupActivity.class);
+                        intent.putExtra("logout", true);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                        finish();
+                    }
+                }
+
+                @Override
+                public void onError(VolleyError error) {
+                    Toast.makeText(MainActivity.this, "网络错误:" + error, Toast.LENGTH_SHORT);
+                    loadingDialog.dismiss();
+                }
+
+                @Override
+                public Map getPostData() {
+                    Map datas = new HashMap();
+                    datas.put("userid", globalInfo.getUserid()+"");
+                    datas.put("token", globalInfo.getToken()+"");
+                    Log.e(TAG, "logout:"+globalInfo.getUserid()+", "+globalInfo.getToken());
+                    return datas;
+                }
+            });
+            VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+
     }
     private String getVersionName(){
         // 获取packagemanager的实例

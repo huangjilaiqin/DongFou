@@ -72,6 +72,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
                             }else {
                                 Intent intent = new Intent();
                                 intent.putExtra("userid", response.getUserid());
+                                intent.putExtra("token", response.getToken());
                                 setResult(RESULT_OK, intent);
                                 finish();
                             }
@@ -124,6 +125,8 @@ public class LoginRegisterActivity extends AppCompatActivity {
                         }else {
                             Intent intent = new Intent();
                             intent.putExtra("userid", response.getUserid());
+                            intent.putExtra("token", response.getToken());
+                            intent.putExtra("isregister", true);
                             setResult(RESULT_OK, intent);
                             finish();
                         }
@@ -148,6 +151,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
     }
 
     public boolean checkEmail(String email) {
+        email = email.replace("@", "@");
         //if (email.matches("[\\w\\.\\-]{3,18}@([A-Za-z0-9]{1}[A-Za-z0-9\\-]{0,}[A-Za-z0-9]{1}\\.)+[A-Za-z]+")) {
         Log.e(TAG, "#"+email+"#");
         if (email.matches("[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w\\-]+")) {

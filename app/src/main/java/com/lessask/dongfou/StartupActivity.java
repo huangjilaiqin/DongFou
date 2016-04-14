@@ -76,7 +76,9 @@ public class StartupActivity extends AppCompatActivity {
             initDb(baseInfo);
         }
         int useid = baseInfo.getInt("userid", 0);
+        String token = baseInfo.getString("token", "");
         globalInfo.setUserid(useid);
+        globalInfo.setToken(token);
         enter = (Button) findViewById(R.id.enter);
         loading = (ProgressBar) findViewById(R.id.loading);
         enter.setOnClickListener(new View.OnClickListener() {
@@ -149,8 +151,7 @@ public class StartupActivity extends AppCompatActivity {
     }
 
     private int getSportSize(){
-        String sql = "select count(*) from t_sport;";
-        //select * from t_sport_record;
+        String sql = "select count(*) from t_sport where userid="+globalInfo.getUserid();
         Cursor cr = DbHelper.getInstance(this).getDb().rawQuery(sql, null);
 
         int count = 0;

@@ -5,9 +5,19 @@ package com.lessask.dongfou;
  */
 public class User extends ResponseError{
     private int userid;
+    private String token;
 
-    public User(int userid) {
+    public User(int userid,String token) {
         this.userid = userid;
+        this.token=token;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public int getUserid() {
