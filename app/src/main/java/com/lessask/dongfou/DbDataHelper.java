@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.lessask.dongfou.util.DbHelper;
+import com.lessask.dongfou.util.GlobalInfo;
 import com.lessask.dongfou.util.TimeHelper;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.List;
  */
 public class DbDataHelper {
     private static String TAG = DbDataHelper.class.getSimpleName();
+    private static GlobalInfo globalInfo = GlobalInfo.getInstance();
     public static SportGather loadSportGatherFromDb(Context context,int sportid){
         return new SportGather(loadSportFromDb(context,sportid),loadSportRecordById(context,sportid));
     }
@@ -34,7 +36,7 @@ public class DbDataHelper {
     public static List<Float> loadSportRecordById(Context context,int sportid){
 
         SQLiteDatabase db = DbHelper.getInstance(context).getDb();
-        Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
+        Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where userid="+globalInfo.getUserid() +" and sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
         Log.e(TAG, "record size:"+cr.getCount());
         List<Float> amounts = new ArrayList<>();
         Date lastTime = TimeHelper.getDateStartOfDay(-6);

@@ -14,6 +14,7 @@ import com.android.volley.VolleyError;
 import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
 import com.lessask.dongfou.util.GlobalInfo;
+import com.lessask.dongfou.util.TimeHelper;
 
 import java.awt.font.TextAttribute;
 import java.util.HashMap;
@@ -91,6 +92,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
                             return datas;
                         }
                     });
+                    gsonRequest.setGson(TimeHelper.gsonWithNodeDate());
                     VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
             }
         });

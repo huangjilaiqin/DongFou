@@ -744,6 +744,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadSportRecord(){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
+        Log.e(TAG, "select * from t_sport_record where userid="+globalInfo.getUserid()+" and datetime(time)>=datetime('now') order by time desc");
         Cursor cr = db.rawQuery("select * from t_sport_record where userid="+globalInfo.getUserid()+" and datetime(time)>=datetime('now') order by time desc", null);
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
@@ -791,6 +792,7 @@ public class MainActivity extends AppCompatActivity {
                     boolean isRegister = data.getBooleanExtra("isregister",false);
                     //记录userid
                     globalInfo.setUserid(userid);
+                    globalInfo.setToken(token);
                     editor.putInt("userid", userid);
                     editor.putString("token", token);
                     editor.commit();
@@ -986,7 +988,8 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
                 break;
             case R.id.login_logout:
-                if(globalInfo.getUserid()==0){
+                Log.e(TAG, "userid:"+globalInfo.getUserid()+", token:"+globalInfo.getToken());
+                if(globalInfo.getUserid()==0 || globalInfo.getToken()==null || globalInfo.getToken()==""){
                     intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
                     startActivityForResult(intent, LOGIN_REGISTER);
                 }else {
@@ -1042,6 +1045,9 @@ public class MainActivity extends AppCompatActivity {
                         Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
                         Toast.makeText(MainActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
                         loadingDialog.dismiss();
+                        Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                        startActivity(intent);
+                        finish();
                     }else {
                         loadingDialog.dismiss();
                         editor.putInt("userid", 0);

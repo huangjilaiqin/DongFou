@@ -75,9 +75,10 @@ public class StartupActivity extends AppCompatActivity {
         if(!baseInfo.getBoolean("initDb", false)){
             initDb(baseInfo);
         }
-        int useid = baseInfo.getInt("userid", 0);
+        int userid = baseInfo.getInt("userid", 0);
         String token = baseInfo.getString("token", "");
-        globalInfo.setUserid(useid);
+        Log.e(TAG, "startup userid:"+userid+", token:"+token);
+        globalInfo.setUserid(userid);
         globalInfo.setToken(token);
         enter = (Button) findViewById(R.id.enter);
         loading = (ProgressBar) findViewById(R.id.loading);
@@ -181,6 +182,7 @@ public class StartupActivity extends AppCompatActivity {
                     enter.setVisibility(View.VISIBLE);
                 }else {
                     ArrayList<Sport> datas = response.getDatas();
+                    Log.e(TAG, "load sports size:"+datas.size());
                     updateSports(datas);
                     //
                     if(getSportSize()>=5) {

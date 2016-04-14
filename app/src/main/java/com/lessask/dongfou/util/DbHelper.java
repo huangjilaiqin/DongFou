@@ -28,7 +28,7 @@ public class DbHelper extends SQLiteOpenHelper{
     private Map<String, ArrayList<DbUpdateListener>> updateCallbacks;
     private Map<String, ArrayList<DbDeleteListener>> deleteCallbacks;
     private static String DB_NAME = "lesask.db";
-    private static int DB_VERSION = 5;
+    private static int DB_VERSION = 6;
 
     public SQLiteDatabase getDb() {
         return db;
@@ -74,6 +74,14 @@ public class DbHelper extends SQLiteOpenHelper{
             case 4:
                 db.execSQL("drop table t_notice");
                 db.execSQL("create table t_notice(id integer primary key,kind integer not null,title text not null,status integer not null default 0,time integer not null,url text not null,arg1 integer,arg2 text)");
+            case 5:
+                db.execSQL("create table t_sport_tmp(id int,name text not null,image text not null,kind int not null,unit text not null,maxnum int not null" +
+                        ",unit2 text null,maxnum2 int null,frequency int default 0,total real default 0,avg real default 0,days int default 0," +
+                        "lasttime int default 0,seq int default 0,lastvalue real default 0,lastvalue2 real default 0,userid int not null default 0 , primary key(id, userid))");
+                db.execSQL("insert into t_sport_tmp select * from t_sport;");
+                db.execSQL("drop table t_sport;");
+                db.execSQL("create table t_sport as select * from t_sport_tmp;");
+
         }
     }
 
