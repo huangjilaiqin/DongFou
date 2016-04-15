@@ -62,6 +62,7 @@ public class FragmentData extends Fragment {
         StringBuilder builder = new StringBuilder();
         for(int i=0;i<this.sportValues.size();i++)
             builder.append(this.sportValues.get(i)+",");
+        Log.e(TAG, builder.toString());
 
         this.sport = sportGather.getSport();
         this.sportid=sport.getId();

@@ -74,6 +74,7 @@ public class LoginRegisterActivity extends AppCompatActivity {
                                 Intent intent = new Intent();
                                 intent.putExtra("userid", response.getUserid());
                                 intent.putExtra("token", response.getToken());
+                                Log.e(TAG, "new token:"+response.getToken());
                                 setResult(RESULT_OK, intent);
                                 finish();
                             }

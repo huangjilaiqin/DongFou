@@ -28,6 +28,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.capricorn.ArcMenu;
@@ -78,6 +79,10 @@ public class MainActivity extends AppCompatActivity {
     private final int UPLOAD_RECORD_DONE = 7;
     private final int CHECK_VERSION = 8;
     private final int LOGOUT = 9;
+    private final int DOWNLOAD_RECORD_ERROR = 10;
+    private final int DOWNLOAD_RECORD_DONE = 11;
+    private final int VOLLEY_ERROR = 12;
+
 
     private Map<Integer,Sport> sportMap;
     private ArrayList<SportGather> sportGathers;
@@ -114,14 +119,43 @@ public class MainActivity extends AppCompatActivity {
                     updateFragmentsIfFirst(sportRecord);
                     break;
                 case UPLOAD_RECORD_ERROR:
+
                     setSyncMenuVisible(true);
                     break;
                 case UPLOAD_RECORD_DONE:
                     setSyncMenuVisible(hasNotSyncRecord());
+                    int mode = msg.arg1;
+                    if(mode==2){
+                        reloadData();
+                    }
+                    break;
+                case DOWNLOAD_RECORD_DONE:
+                    uploadRecord(2);
+                    break;
+                case DOWNLOAD_RECORD_ERROR:
+                    Toast.makeText(MainActivity.this, "登录过期,请重新登录",Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                    startActivityForResult(intent, LOGIN_REGISTER);
                     break;
                 case CHECK_VERSION:
                     if(msg.arg1==1){
                         setNotificationStatus(true);
+                    }
+                    break;
+                case VOLLEY_ERROR:
+                    VolleyError error = (VolleyError)msg.obj;
+                    if(error instanceof TimeoutError){
+                        Toast.makeText(MainActivity.this, "连接超时,请检查网络", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.NoConnectionError){
+                        Toast.makeText(MainActivity.this, "网络出问题了,请检查网络", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.NetworkError){
+                        Toast.makeText(MainActivity.this, "网络出问题了,请检查网络", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.ServerError){
+                        Toast.makeText(MainActivity.this, "服务器异常,我们在紧急抢修中", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.ParseError){
+                        Toast.makeText(MainActivity.this, "数据错误,请反馈或联系官方qq群", Toast.LENGTH_SHORT).show();
+                    }else {
+                        Toast.makeText(MainActivity.this, "请升级到最新版再试,或联系我们", Toast.LENGTH_LONG).show();
                     }
                     break;
             }
@@ -160,8 +194,6 @@ public class MainActivity extends AppCompatActivity {
             String token = baseInfo.getString("token", "");
             globalInfo.setToken(token);
         }
-        //加载运动列表为空, 可能是globalInfo中的userid获取不到了
-        loadDatas();
 
         Toolbar mToolbar = (Toolbar) findViewById(R.id.toolbar);
         mToolbar.setTitle("动否");
@@ -173,7 +205,17 @@ public class MainActivity extends AppCompatActivity {
         //View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
         //View footView = LayoutInflater.from(thi.inflate(R.layout.data_foot,mRecyclerView,false);
 
+        DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
+        DbHelper.getInstance(this).appendDeleteListener("t_sport_record", sportRecordDeleteListener);
+
+        Log.e(TAG, "versionName:"+getVersionName());
+        Log.e(TAG, "versionCode:"+getVersionCode());
+        checkVersionUpdate();
+
+        //加载运动列表为空, 可能是globalInfo中的userid获取不到了
+        loadDatas();
         mFragmentDataPagerAdapter = new FragmentDataPagerAdapter(getSupportFragmentManager());
+
         fragmentDatas = new ArrayList<>();
         for(int i=0;i<5;i++) {
             FragmentData fragmentData = new FragmentData();
@@ -192,87 +234,109 @@ public class MainActivity extends AppCompatActivity {
         //mRecyclerView.addFooterView(footView);
         mRecyclerViewAdapter = new SportRecordAdapter(this);
         mRecyclerViewAdapter.setSportMap(sportMap);
+
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
-        mRecyclerViewAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
-                @Override
-                public void onItemLongClick(View view, final int position) {
-                    final SportRecord sportRecord = mRecyclerViewAdapter.getItem(position);
-                    final Sport sport = loadSport(sportRecord.getSportid());
-                    final MenuDialog menuDialog = new MenuDialog(MainActivity.this, new String[]{"删除"},
-                            new OnSelectMenu() {
-                                @Override
-                                public void onSelectMenu(int menupos) {
-                                    Intent intent;
-                                    switch (menupos) {
-                                        case 0:
-                                            //删除课程
-                                            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                                            StringBuilder detail = new StringBuilder();
-                                            int kind = sport.getKind();
-                                            if(kind==1){
-                                                String unit = sport.getUnit();
-                                                if(unit.equals("次"))
-                                                    detail.append((int)sportRecord.getArg1());
-                                                else
-                                                    detail.append(sportRecord.getArg1());
-                                                detail.append(unit);
-                                            }else if(kind==2){
-                                                String unit = sport.getUnit();
-                                                if(unit.equals("次"))
-                                                    detail.append((int)sportRecord.getArg1());
-                                                else
-                                                    detail.append(sportRecord.getArg1());
-                                                detail.append(unit);
-                                                detail.append(" ");
-                                                detail.append(sportRecord.getArg2());
-                                                detail.append(sport.getUnit2());
-                                                detail.append("/");
-                                                detail.append(sport.getUnit());
-                                            }
-                                            builder.setMessage("确认删除？" + sport.getName()+ ":"+detail.toString()+" 的记录");
-                                            builder.setTitle("提示");
-                                            builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    dialog.dismiss();
-                                                    //网络协议
-                                                    deleteSportRecord(position);
-                                                }
-                                            });
-                                            builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                    dialog.dismiss();
-                                                }
-                                            });
-                                            builder.create().show();
-                                            break;
-                                    }
-                                }
-                            });
-                    menuDialog.show();
-                }
-            });
+        mRecyclerViewAdapter.setOnItemLongClickListener(onRecordLondClickListener);
+        List<SportRecord> sportRecords = loadSportRecord();
+        mRecyclerViewAdapter.clear();
+        mRecyclerViewAdapter.appendToList(sportRecords);
+        mRecyclerViewAdapter.notifyDataSetChanged();
 
-        loadSportRecord();
-        //DbHelper.getInstance(getBaseContext()).appendInsertListener("t_sport_record", chatRecorInsertListener);
-
-        //CirclePageIndicator circlePageIndicator = (CirclePageIndicator)mHeaderView.findViewById(R.id.indicator);
         CirclePageIndicator circlePageIndicator = (CirclePageIndicator)findViewById(R.id.indicator);
         circlePageIndicator.setFillColor(getResources().getColor(R.color.main_color));
         circlePageIndicator.setStrokeColor(getResources().getColor(R.color.gray));
         circlePageIndicator.setViewPager(mViewPager);
 
         arcMenu = (ArcMenu) findViewById(R.id.arc_menu);
-
-        DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
-        DbHelper.getInstance(this).appendDeleteListener("t_sport_record", sportRecordDeleteListener);
         initMenu();
-
-        Log.e(TAG, "versionName:"+getVersionName());
-        Log.e(TAG, "versionCode:"+getVersionCode());
-        checkVersionUpdate();
     }
+
+    private void reloadData(){
+        //加载运动列表为空, 可能是globalInfo中的userid获取不到了
+        sportGathers.clear();
+        loadDatas();
+
+        for(int i=0;i<fragmentDatas.size();i++) {
+            FragmentData fragmentData = (FragmentData)fragmentDatas.get(i);
+
+            fragmentData.setSportid(sportGathers.get(i).getSport().getId());
+            fragmentData.setSportGather(sportGathers.get(i));
+            Log.e(TAG, "reload update");
+            fragmentData.update();
+        }
+        mFragmentDataPagerAdapter.setSportGathers(sportGathers);
+        mRecyclerViewAdapter.setSportMap(sportMap);
+
+        //更新当天运动记录列表
+        loadSportRecord();
+        List<SportRecord> sportRecords = loadSportRecord();
+        mRecyclerViewAdapter.clear();
+        mRecyclerViewAdapter.appendToList(sportRecords);
+        mRecyclerViewAdapter.notifyDataSetChanged();
+
+        updateMenu();
+    }
+
+    private OnItemLongClickListener onRecordLondClickListener = new OnItemLongClickListener() {
+        @Override
+        public void onItemLongClick(View view, final int position) {
+            final SportRecord sportRecord = mRecyclerViewAdapter.getItem(position);
+            final Sport sport = loadSport(sportRecord.getSportid());
+            final MenuDialog menuDialog = new MenuDialog(MainActivity.this, new String[]{"删除"},
+                    new OnSelectMenu() {
+                        @Override
+                        public void onSelectMenu(int menupos) {
+                            Intent intent;
+                            switch (menupos) {
+                                case 0:
+                                    //删除课程
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                                    StringBuilder detail = new StringBuilder();
+                                    int kind = sport.getKind();
+                                    if(kind==1){
+                                        String unit = sport.getUnit();
+                                        if(unit.equals("次"))
+                                            detail.append((int)sportRecord.getArg1());
+                                        else
+                                            detail.append(sportRecord.getArg1());
+                                        detail.append(unit);
+                                    }else if(kind==2){
+                                        String unit = sport.getUnit();
+                                        if(unit.equals("次"))
+                                            detail.append((int)sportRecord.getArg1());
+                                        else
+                                            detail.append(sportRecord.getArg1());
+                                        detail.append(unit);
+                                        detail.append(" ");
+                                        detail.append(sportRecord.getArg2());
+                                        detail.append(sport.getUnit2());
+                                        detail.append("/");
+                                        detail.append(sport.getUnit());
+                                    }
+                                    builder.setMessage("确认删除？" + sport.getName()+ ":"+detail.toString()+" 的记录");
+                                    builder.setTitle("提示");
+                                    builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                            //网络协议
+                                            deleteSportRecord(position);
+                                        }
+                                    });
+                                    builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    });
+                                    builder.create().show();
+                                    break;
+                            }
+                        }
+                    });
+            menuDialog.show();
+        }
+    };
 
     private void deleteSportRecord(final int deletePostion){
         final LoadingDialog loadingDialog = new LoadingDialog(this);
@@ -412,10 +476,11 @@ public class MainActivity extends AppCompatActivity {
             amount*=data2;
         }
         values.put("amount", amount);
-        Log.e(TAG, "amount:"+amount);
+        Log.e(TAG, "amount:" + amount);
         values.put("arg1", data1);
         values.put("arg2", data2);
         values.put("time", new Date().getTime() / 1000);
+        values.put("seq", "0");
         values.put("userid", "" + globalInfo.getUserid());
         //long id = dbInstance.insert("t_sport_record", null, values);
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
@@ -508,7 +573,7 @@ public class MainActivity extends AppCompatActivity {
             handler.sendMessage(message);
 
             if(globalInfo.getUserid()!=0)
-                uploadRecord();
+                uploadRecord(0);
 
         }
     };
@@ -704,9 +769,8 @@ public class MainActivity extends AppCompatActivity {
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
             sportMap.put(sport.getId(), sport);
             sportGathers.add(new SportGather(sport, loadSportRecordById(sport.getId())));
-            Log.e(TAG, "load sport:" + sport.getName());
+            Log.e(TAG, "load sport:" + sport.getName()+", "+sport.getTotal());
         }
-        Log.e(TAG, "load sports:"+sportGathers.size());
         cr.close();
     }
 
@@ -714,7 +778,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Float> loadSportRecordById(int sportid){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
+        Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where userid=" + globalInfo.getUserid() + " and sportid=" + sportid + " and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
         List<Float> amounts = new ArrayList<>();
         Date lastTime = TimeHelper.getDateStartOfDay(-6);
         int index=0;
@@ -741,18 +805,19 @@ public class MainActivity extends AppCompatActivity {
         return amounts;
     }
 
-    private void loadSportRecord(){
+    private List<SportRecord> loadSportRecord(){
 
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
         Log.e(TAG, "select * from t_sport_record where userid="+globalInfo.getUserid()+" and datetime(time)>=datetime('now') order by time desc");
         Cursor cr = db.rawQuery("select * from t_sport_record where userid="+globalInfo.getUserid()+" and datetime(time)>=datetime('now') order by time desc", null);
+        ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
             SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
-            mRecyclerViewAdapter.append(sportRecord);
+            sportRecords.add(sportRecord);
         }
-        mRecyclerViewAdapter.notifyDataSetChanged();
         cr.close();
+        return sportRecords;
     }
 
     private SportRecord loadOneSportRecordById(int id){
@@ -789,6 +854,7 @@ public class MainActivity extends AppCompatActivity {
                 case LOGIN_REGISTER:
                     int userid = data.getIntExtra("userid", -1);
                     String token = data.getStringExtra("token");
+                    Log.e(TAG, "new token:"+token);
                     boolean isRegister = data.getBooleanExtra("isregister",false);
                     //记录userid
                     globalInfo.setUserid(userid);
@@ -799,7 +865,11 @@ public class MainActivity extends AppCompatActivity {
 
                     //更新userid为0的记录
                     String sql = "update t_sport set userid="+userid+" where userid=0";
-                    dbInstance.execSQL(sql);
+                    try {
+                        dbInstance.execSQL(sql);
+                    }catch (Exception e){
+                        Log.e(TAG, e.toString());
+                    }
                     sql = "update t_sport_record set userid="+userid+" where userid=0";
                     dbInstance.execSQL(sql);
                     sql = "update t_sport_record_day set userid="+userid+" where userid=0";
@@ -807,7 +877,8 @@ public class MainActivity extends AppCompatActivity {
                     sql = "update t_sport_record_month set userid="+userid+" where userid=0";
                     dbInstance.execSQL(sql);
 
-                    uploadRecord();
+                    //uploadRecord(false);
+                    downloadRecord();
                     menu.findItem(R.id.login_logout).setTitle("退出帐号");
                     break;
                 default:
@@ -816,7 +887,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void uploadRecord(){
+    /*
+    * mode = 0 自动同步
+    * mode = 1 手动同步
+    * mode = 2 登录后第一次同步
+    * */
+    private void uploadRecord(final int mode){
 
         String sql = "select * from t_sport_record where userid="+globalInfo.getUserid()+" and seq=0;";
         //select * from t_sport_record;
@@ -848,7 +924,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "response:" + response.toString());
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
                     Log.e(TAG, "onResponse upload record error:" + response.getError() + ", " + response.getErrno());
-                    handler.sendEmptyMessage(UPLOAD_RECORD_ERROR);
+                    Message msg = new Message();
+                    msg.what=UPLOAD_RECORD_ERROR;
+                    msg.obj=mode;
+                    handler.sendMessage(msg);
                 }else {
                     ArrayList<SportRecord> datas = response.getDatas();
                     //入库,本地化
@@ -862,7 +941,10 @@ public class MainActivity extends AppCompatActivity {
                         dbInstance.update("t_sport_record", values,"id=? and userid=?",args);
                         Log.e(TAG, "update t_sport_record, seq:" + record.getSeq());
                     }
-                    handler.sendEmptyMessage(UPLOAD_RECORD_DONE);
+                    Message msg = new Message();
+                    msg.what=UPLOAD_RECORD_DONE;
+                    msg.arg1=mode;
+                    handler.sendMessage(msg);
                 }
             }
 
@@ -870,7 +952,10 @@ public class MainActivity extends AppCompatActivity {
             public void onError(VolleyError error) {
                 //Toast.makeText(MainActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "同步记录, 网络错误:"+error);
-                handler.sendEmptyMessage(UPLOAD_RECORD_ERROR);
+                Message msg = new Message();
+                msg.what=UPLOAD_RECORD_ERROR;
+                msg.obj=mode;
+                handler.sendMessage(msg);
             }
 
             @Override
@@ -884,6 +969,90 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
+
+    private void downloadRecord(){
+
+        String sql = "select * from t_sport_record as s inner join (select sportid,userid,max(seq) as seq from t_sport_record where userid="+globalInfo.getUserid()+" group by sportid) s1 on s.sportid=s1.sportid and s.seq=s1.seq and s.userid=s1.userid";
+        Log.e(TAG, "downloadRecord: "+sql);
+
+        Cursor cr = dbInstance.rawQuery(sql, null);
+        final ArrayList<SportRecord> sportRecords = new ArrayList<>();
+        while (cr.moveToNext()) {
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0,userid int not null default 0)");
+            int id = cr.getInt(0);
+            int sportid=cr.getInt(1);
+            float amount = cr.getFloat(2);
+            float arg1=cr.getFloat(3);
+            float arg2=cr.getFloat(4);
+            int seq=cr.getInt(6);
+            Date time = new Date(cr.getInt(5)*1000l);
+            SportRecord record = new SportRecord(id,sportid,amount,arg1,arg2,seq,time,globalInfo.getUserid());
+            sportRecords.add(record);
+        }
+        cr.close();
+
+        Type type = new TypeToken<ArrayListResponse<SportRecord>>() {}.getType();
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.downloadRecordUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
+            @Override
+            public void onStart() {
+                //显示同步转圈圈动画
+            }
+            @Override
+            public void onResponse(ArrayListResponse response) {
+                Log.e(TAG, "response:" + response.toString());
+                if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    Log.e(TAG, "onResponse upload record error:" + response.getError() + ", " + response.getErrno());
+                    Message msg = new Message();
+                    msg.what=DOWNLOAD_RECORD_ERROR;
+                    handler.sendMessage(msg);
+                }else {
+                    ArrayList<SportRecord> datas = response.getDatas();
+                    //入库,本地化
+                    for(int i=0;i<datas.size();i++){
+                        SportRecord record = datas.get(i);
+                        addSportRecordFromServer(record);
+                    }
+                    handler.sendEmptyMessage(DOWNLOAD_RECORD_DONE);
+                }
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                //Toast.makeText(MainActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "下载记录, 网络错误:"+error);
+                Message msg = new Message();
+                msg.what=VOLLEY_ERROR;
+                msg.obj = error;
+                handler.sendMessage(msg);
+            }
+
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                Log.e(TAG, "getPostData");
+                datas.put("userid", globalInfo.getUserid()+"");
+                datas.put("token", globalInfo.getToken()+"");
+                datas.put("records",TimeHelper.gsonWithDate().toJson(sportRecords));
+                return datas;
+            }
+        });
+        gsonRequest.setGson(TimeHelper.gsonWithNodeDate());
+        VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
+
+    private void addSportRecordFromServer(SportRecord sportRecord){
+        //create table t_sport_record(id int primary key,amount real not null,int arg1 not null default 0,int arg2 not null default 0,time int NOT NULL,seq int not null default 0)");
+        ContentValues values = new ContentValues();
+
+        values.put("userid", "" + sportRecord.getUserid());
+        values.put("sportid", sportRecord.getSportid());
+        values.put("amount", ""+sportRecord.getAmount());
+        values.put("arg1", "" + sportRecord.getArg1());
+        values.put("arg2", ""+sportRecord.getArg2());
+        values.put("time", new Date().getTime() / 1000);
+        values.put("seq", sportRecord.getSeq());
+        DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
 
     private void checkVersionUpdate(){
@@ -972,7 +1141,7 @@ public class MainActivity extends AppCompatActivity {
                     intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
                     startActivityForResult(intent, LOGIN_REGISTER);
                 }else {
-                    uploadRecord();
+                    uploadRecord(1);
                 }
                 break;
             case R.id.notifications:
@@ -1009,7 +1178,7 @@ public class MainActivity extends AppCompatActivity {
         if (cr.getCount() > 0) {
 
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setMessage("你有尚未同步的记录");
+            builder.setMessage("退出后,您尚未同步的记录将丢失");
             builder.setTitle("警告");
             builder.setPositiveButton("仍然退出", new DialogInterface.OnClickListener() {
                  @Override
@@ -1022,7 +1191,7 @@ public class MainActivity extends AppCompatActivity {
                  @Override
                  public void onClick(DialogInterface dialog, int which) {
                      dialog.dismiss();
-                     uploadRecord();
+                     uploadRecord(1);
                  }
             });
             builder.create().show();
@@ -1043,11 +1212,14 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "response:" + response.toString());
                     if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
                         Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
-                        Toast.makeText(MainActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(MainActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
+                        editor.putString("token", "");
+                        editor.commit();
+                        Toast.makeText(MainActivity.this, "登录过期,请重新登录", Toast.LENGTH_SHORT).show();
+
                         loadingDialog.dismiss();
                         Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
-                        startActivity(intent);
-                        finish();
+                        startActivityForResult(intent, LOGIN_REGISTER);
                     }else {
                         loadingDialog.dismiss();
                         editor.putInt("userid", 0);

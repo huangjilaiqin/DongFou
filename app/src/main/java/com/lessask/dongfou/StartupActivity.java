@@ -130,9 +130,9 @@ public class StartupActivity extends AppCompatActivity {
         //lasttime:最后一次运动时间
         //times:总运动天数
         //seq:服务器同步状态, 0表示未同步, 1:表示已同步
-        db.execSQL("create table t_sport(id int primary key,name text not null,image text not null,kind int not null,unit text not null,maxnum int not null" +
+        db.execSQL("create table t_sport(id integer,name text not null,image text not null,kind int not null,unit text not null,maxnum int not null" +
                     ",unit2 text null,maxnum2 int null,frequency int default 0,total real default 0,avg real default 0,days int default 0," +
-                    "lasttime int default 0,seq int default 0,lastvalue real default 0,lastvalue2 real default 0,userid int not null default 0)");
+                    "lasttime int default 0,seq int default 0,lastvalue real default 0,lastvalue2 real default 0,userid int not null default 0, primary key(id, userid))");
         //运动记录
         //arg1: 第一个单位下的数据
         //arg2: 第二个单位下的数据

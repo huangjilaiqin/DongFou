@@ -13,6 +13,7 @@ public class Config {
     public static String loginUrl = host+"/dongfou/login";
     public static String logoutUrl = host+"/dongfou/logout";
     public static String uploadRecordUrl = host+"/dongfou/upload/sportrecord";
+    public static String downloadRecordUrl = host+"/dongfou/download/sportrecord";
     public static String deleteRecordUrl = host+"/dongfou/sportrecord/delete";
     public static String checkUpdate = host+"/dongfou/checkupdate";
     public static String loadNotices = host+"/dongfou/notices";
