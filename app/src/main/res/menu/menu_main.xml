@@ -21,6 +21,11 @@
             android:orderInCategory="80"
             app:showAsAction="never"
             />
+        <item android:id="@+id/update"
+            android:title="检查更新"
+            android:orderInCategory="80"
+            app:showAsAction="never"
+            />
         <item android:id="@+id/login_logout"
               android:title="登录"
               android:orderInCategory="80"

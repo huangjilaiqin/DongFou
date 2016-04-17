@@ -52,17 +52,11 @@ public class FragmentData extends Fragment {
 
     public void setSportid(int sportid) {
         this.sportid = sportid;
-        Log.e(TAG, "set sportid:"+sportid);
-        Log.e(TAG, "setSportid:"+this);
     }
 
     public void setSportGather(SportGather sportGather) {
         this.sportGather = sportGather;
         this.sportValues = sportGather.getSportRecords();
-        StringBuilder builder = new StringBuilder();
-        for(int i=0;i<this.sportValues.size();i++)
-            builder.append(this.sportValues.get(i)+",");
-        Log.e(TAG, builder.toString());
 
         this.sport = sportGather.getSport();
         this.sportid=sport.getId();
@@ -75,19 +69,18 @@ public class FragmentData extends Fragment {
             if(mWeeks[6-i].equals("周一"))
                 last="上";
         }
+        /*
         if(sportName==null)
-            Log.e(TAG, "set data sportname is null");
         else {
-            Log.e(TAG, "set data sportname is not null:"+sport.getTotal());
             total.setText(sport.getTotal()+"");
         }
+        */
     }
 
     public void update(){
 
         //如果fragment为初始化不进行更新
         if(sportName==null) {
-            Log.e(TAG, "sportName is null");
             return;
         }
         sportName.setText(sport.getName());
@@ -110,10 +103,8 @@ public class FragmentData extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
 
-        Log.e(TAG, "onActivityCreated:"+savedInstanceState);
         super.onActivityCreated(savedInstanceState);
         Bundle bundle = getArguments();
-        Log.e(TAG, "bundle sport:"+bundle.getInt("sportid"));
         sportid = bundle.getInt("sportid");
         loadData();
 
@@ -226,7 +217,6 @@ public class FragmentData extends Fragment {
 
     private void loadData(){
         if(sport==null || sportValues==null) {
-            Log.e(TAG, "load data");
             sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
             sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
         }
@@ -235,7 +225,6 @@ public class FragmentData extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.e(TAG, "onCreateView:"+savedInstanceState);
         rootView = inflater.inflate(R.layout.fragment_data, container,false);
 
         return rootView;
@@ -254,10 +243,6 @@ public class FragmentData extends Fragment {
             float val = sportValues.get(i);
             yVals1.add(new BarEntry(val, i));
         }
-        StringBuilder builder = new StringBuilder();
-        for(int i=0;i<sportValues.size();i++)
-            builder.append(sportValues.get(i)+",");
-        Log.e(TAG, builder.toString());
 
         BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
         set1.setLabel("跑步");

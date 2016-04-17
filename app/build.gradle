@@ -25,8 +25,8 @@ android {
         applicationId "com.lessask.dongfou"
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 3
-        versionName "0.0.3"
+        versionCode 4
+        versionName "0.0.4"
         signingConfig signingConfigs.dongfou
     }
 

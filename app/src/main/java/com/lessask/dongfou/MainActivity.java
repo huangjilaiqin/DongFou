@@ -9,6 +9,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.Fragment;
@@ -98,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler = new Handler(){
         SportRecord sportRecord;
         @Override
-        public void handleMessage(Message msg) {
+        public void handleMessage(final Message msg) {
             switch (msg.what){
                 case ADD_SPORT:
                     Log.e(TAG, "ADD_SPORT");
@@ -119,17 +120,25 @@ public class MainActivity extends AppCompatActivity {
                     updateFragmentsIfFirst(sportRecord);
                     break;
                 case UPLOAD_RECORD_ERROR:
-
+                    int mode = (int)msg.arg1;
                     setSyncMenuVisible(true);
+                    if(mode==1){
+                        if(msg.arg2>=301 && msg.arg2<=303){
+                            Toast.makeText(MainActivity.this, "登录过期,请重新登录", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
+                            startActivityForResult(intent, LOGIN_REGISTER);
+                        }
+                    }
                     break;
                 case UPLOAD_RECORD_DONE:
                     setSyncMenuVisible(hasNotSyncRecord());
-                    int mode = msg.arg1;
+                    mode = msg.arg1;
                     if(mode==2){
                         reloadData();
                     }
                     break;
                 case DOWNLOAD_RECORD_DONE:
+                    setSyncMenuVisible(hasNotSyncRecord());
                     uploadRecord(2);
                     break;
                 case DOWNLOAD_RECORD_ERROR:
@@ -140,6 +149,29 @@ public class MainActivity extends AppCompatActivity {
                 case CHECK_VERSION:
                     if(msg.arg1==1){
                         setNotificationStatus(true);
+                    }else if(msg.arg1==2){
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setMessage("已经停止对该版本支持,请升级到最新版本");
+                        builder.setTitle("公告");
+                        final String url = (String)msg.obj;
+                        builder.setPositiveButton("更新", new DialogInterface.OnClickListener() {
+                             @Override
+                             public void onClick(DialogInterface dialog, int which) {
+                                 dialog.dismiss();
+                                 Log.e(TAG, "url:"+url);
+                                 Uri uri = Uri.parse(url);
+                                 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                 startActivity(intent);
+                             }
+                        });
+                        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                             @Override
+                             public void onClick(DialogInterface dialog, int which) {
+                                 dialog.dismiss();
+                             }
+                        });
+                        builder.create().show();
+
                     }
                     break;
                 case VOLLEY_ERROR:
@@ -630,7 +662,8 @@ public class MainActivity extends AppCompatActivity {
         }
         sportGathers.add(0, loadSportGatherFromDb(sportRecord.getSportid()));
         //通知fragment更新
-        for(i=0;i<fragmentDatas.size();i++){
+        int minSize = fragmentDatas.size()>sportGathers.size()?sportGathers.size():fragmentDatas.size();
+        for(i=0;i<minSize;i++){
             FragmentData fragmentData = (FragmentData) fragmentDatas.get(i);
             fragmentData.setSportGather(sportGathers.get(i));
             Log.e(TAG, "total:"+sportGathers.get(i).getSport().getTotal());
@@ -855,7 +888,6 @@ public class MainActivity extends AppCompatActivity {
                     int userid = data.getIntExtra("userid", -1);
                     String token = data.getStringExtra("token");
                     Log.e(TAG, "new token:"+token);
-                    boolean isRegister = data.getBooleanExtra("isregister",false);
                     //记录userid
                     globalInfo.setUserid(userid);
                     globalInfo.setToken(token);
@@ -877,7 +909,6 @@ public class MainActivity extends AppCompatActivity {
                     sql = "update t_sport_record_month set userid="+userid+" where userid=0";
                     dbInstance.execSQL(sql);
 
-                    //uploadRecord(false);
                     downloadRecord();
                     menu.findItem(R.id.login_logout).setTitle("退出帐号");
                     break;
@@ -894,9 +925,13 @@ public class MainActivity extends AppCompatActivity {
     * */
     private void uploadRecord(final int mode){
 
+        Log.e(TAG, "uploadRecord mode:"+mode);
         String sql = "select * from t_sport_record where userid="+globalInfo.getUserid()+" and seq=0;";
         //select * from t_sport_record;
         Cursor cr = dbInstance.rawQuery(sql, null);
+        if(cr.getCount()==0){
+            return;
+        }
         final ArrayList<SportRecord> sportRecords = new ArrayList<>();
         while (cr.moveToNext()) {
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0,userid int not null default 0)");
@@ -907,11 +942,12 @@ public class MainActivity extends AppCompatActivity {
             float arg2=cr.getFloat(4);
             int seq=cr.getInt(6);
             Date time = new Date(cr.getInt(5)*1000l);
-            Log.e(TAG, "upload time:"+time);
             SportRecord record = new SportRecord(id,sportid,amount,arg1,arg2,seq,time,globalInfo.getUserid());
             sportRecords.add(record);
         }
         cr.close();
+
+        Log.e(TAG, "uploadRecord siez:"+sportRecords.size());
 
         Type type = new TypeToken<ArrayListResponse<SportRecord>>() {}.getType();
         GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.uploadRecordUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
@@ -921,12 +957,13 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onResponse(ArrayListResponse response) {
-                Log.e(TAG, "response:" + response.toString());
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
                     Log.e(TAG, "onResponse upload record error:" + response.getError() + ", " + response.getErrno());
                     Message msg = new Message();
                     msg.what=UPLOAD_RECORD_ERROR;
-                    msg.obj=mode;
+                    msg.obj = response.getError();
+                    msg.arg1=mode;
+                    msg.arg2=response.getErrno();
                     handler.sendMessage(msg);
                 }else {
                     ArrayList<SportRecord> datas = response.getDatas();
@@ -953,28 +990,28 @@ public class MainActivity extends AppCompatActivity {
                 //Toast.makeText(MainActivity.this, "网络错误", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "同步记录, 网络错误:"+error);
                 Message msg = new Message();
-                msg.what=UPLOAD_RECORD_ERROR;
-                msg.obj=mode;
+                msg.what=VOLLEY_ERROR;
+                msg.obj = error;
                 handler.sendMessage(msg);
             }
 
             @Override
             public Map getPostData() {
                 Map datas = new HashMap();
-                Log.e(TAG, "getPostData");
                 datas.put("userid", globalInfo.getUserid()+"");
                 datas.put("token", globalInfo.getToken()+"");
                 datas.put("records",TimeHelper.gsonWithDate().toJson(sportRecords));
                 return datas;
             }
         });
+        gsonRequest.setGson(TimeHelper.gsonWithDate());
         VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
     }
 
     private void downloadRecord(){
 
         String sql = "select * from t_sport_record as s inner join (select sportid,userid,max(seq) as seq from t_sport_record where userid="+globalInfo.getUserid()+" group by sportid) s1 on s.sportid=s1.sportid and s.seq=s1.seq and s.userid=s1.userid";
-        Log.e(TAG, "downloadRecord: "+sql);
+        //select * from t_sport_record as s inner join (select sportid,userid,max(seq) as seq from t_sport_record where userid=6 group by sportid) s1 on s.sportid=s1.sportid and s.seq=s1.seq and s.userid=s1.userid;
 
         Cursor cr = dbInstance.rawQuery(sql, null);
         final ArrayList<SportRecord> sportRecords = new ArrayList<>();
@@ -1000,17 +1037,18 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onResponse(ArrayListResponse response) {
-                Log.e(TAG, "response:" + response.toString());
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
-                    Log.e(TAG, "onResponse upload record error:" + response.getError() + ", " + response.getErrno());
+                    Log.e(TAG, "onResponse download record error:" + response.getError() + ", " + response.getErrno());
                     Message msg = new Message();
                     msg.what=DOWNLOAD_RECORD_ERROR;
                     handler.sendMessage(msg);
                 }else {
                     ArrayList<SportRecord> datas = response.getDatas();
+                    Log.e(TAG, "download record size:"+datas.size());
                     //入库,本地化
                     for(int i=0;i<datas.size();i++){
                         SportRecord record = datas.get(i);
+                        Log.e(TAG, "server record:"+record.getTime());
                         addSportRecordFromServer(record);
                     }
                     handler.sendEmptyMessage(DOWNLOAD_RECORD_DONE);
@@ -1030,7 +1068,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public Map getPostData() {
                 Map datas = new HashMap();
-                Log.e(TAG, "getPostData");
                 datas.put("userid", globalInfo.getUserid()+"");
                 datas.put("token", globalInfo.getToken()+"");
                 datas.put("records",TimeHelper.gsonWithDate().toJson(sportRecords));
@@ -1050,7 +1087,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("amount", ""+sportRecord.getAmount());
         values.put("arg1", "" + sportRecord.getArg1());
         values.put("arg2", ""+sportRecord.getArg2());
-        values.put("time", new Date().getTime() / 1000);
+        values.put("time", sportRecord.getTime().getTime() / 1000);
         values.put("seq", sportRecord.getSeq());
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
@@ -1064,23 +1101,27 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onResponse(Version response) {
-                Log.e(TAG, "response:" + response.toString());
                 if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
                     Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
                 }else {
                     Message msg = new Message();
                     msg.what=CHECK_VERSION;
+                    Log.e(TAG, "url:"+response.getUrl());
+                    msg.obj=response.getUrl();
                     msg.arg1=0;
                     int newVersionCode = response.getVersioncode();
                     editor.putInt("newestVersion", newVersionCode);
                     editor.commit();
                     int currentVersionCode = getVersionCode();
+                    int minVersion = response.getMinversion();
                     if(currentVersionCode<newVersionCode){
                         int checkVersionCode = baseInfo.getInt("checkVersionCode", 0);
                         if(checkVersionCode==0 || checkVersionCode<newVersionCode){
                             msg.arg1=1;
                         }
                     }
+                    if(currentVersionCode<minVersion)
+                        msg.arg1=2;
                     handler.sendMessage(msg);
                 }
             }
@@ -1109,7 +1150,7 @@ public class MainActivity extends AppCompatActivity {
         setSyncMenuVisible(hasNotSyncRecord());
         if (globalInfo.getUserid() == 0 || globalInfo.getToken()==null || globalInfo.getToken()==""){
             setSyncMenuVisible(true);
-            menu.findItem(R.id.login_logout).setTitle("登录");
+            menu.findItem(R.id.login_logout).setTitle("登录/注册");
         }else {
             menu.findItem(R.id.login_logout).setTitle("退出帐号");
         }
@@ -1155,6 +1196,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.feedback:
                 intent = new Intent(MainActivity.this, FeedbackActivity.class);
                 startActivity(intent);
+                break;
+            case R.id.update:
+                checkVersionUpdateWithHand();
                 break;
             case R.id.login_logout:
                 Log.e(TAG, "userid:"+globalInfo.getUserid()+", token:"+globalInfo.getToken());
@@ -1210,9 +1254,11 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(ResponseError response) {
                     Log.e(TAG, "response:" + response.toString());
-                    if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0) {
                         Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+
                         //Toast.makeText(MainActivity.this, response.getError(), Toast.LENGTH_SHORT).show();
+                        /*
                         editor.putString("token", "");
                         editor.commit();
                         Toast.makeText(MainActivity.this, "登录过期,请重新登录", Toast.LENGTH_SHORT).show();
@@ -1221,22 +1267,43 @@ public class MainActivity extends AppCompatActivity {
                         Intent intent = new Intent(MainActivity.this, LoginRegisterActivity.class);
                         startActivityForResult(intent, LOGIN_REGISTER);
                     }else {
-                        loadingDialog.dismiss();
-                        editor.putInt("userid", 0);
-                        editor.putString("token", "");
-                        editor.commit();
-
-                        Intent intent = new Intent(MainActivity.this, StartupActivity.class);
-                        intent.putExtra("logout", true);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
-                        finish();
+                    */
                     }
+
+                    //清除数据
+                    editor.putInt("userid", 0);
+                    editor.putString("token", "");
+                    editor.remove("logintip");
+                    editor.remove("newestVersion");
+                    editor.remove("checkVersionCode");
+                    editor.commit();
+
+                    //删除运动记录
+                    SQLiteDatabase db = DbHelper.getInstance(MainActivity.this).getDb();
+                    int userid = globalInfo.getUserid();
+                    db.delete("t_sport", "userid=?", new String[]{userid+""});
+                    db.delete("t_sport_record", "userid=?", new String[]{userid + ""});
+                    db.delete("t_sport_record_day", "userid=?", new String[]{userid + ""});
+                    db.delete("t_sport_record_month", "userid=?", new String[]{userid + ""});
+                    db.delete("t_notice", null, null);
+
+
+                    loadingDialog.dismiss();
+
+                    Intent intent = new Intent(MainActivity.this, StartupActivity.class);
+                    intent.putExtra("logout", true);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
                 }
 
                 @Override
                 public void onError(VolleyError error) {
                     Toast.makeText(MainActivity.this, "网络错误:" + error, Toast.LENGTH_SHORT);
+                    Message msg = new Message();
+                    msg.what=VOLLEY_ERROR;
+                    msg.obj=error;
+                    handler.sendMessage(msg);
                     loadingDialog.dismiss();
                 }
 
@@ -1293,7 +1360,54 @@ public class MainActivity extends AppCompatActivity {
         }
         return deviceId;
     }
+
+    private void checkVersionUpdateWithHand(){
+        final int versionCode = getVersionCode();
+        final LoadingDialog loadingDialog = new LoadingDialog(MainActivity.this);
+        GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.checkUpdate , Version.class, new GsonRequest.PostGsonRequest<Version>() {
+            @Override
+            public void onStart() {
+                                        loadingDialog.show();
+                                                             }
+            @Override
+            public void onResponse(Version response) {
+                loadingDialog.dismiss();
+                if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0){
+                    Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
+                }else {
+                    int newVersionCode = response.getVersioncode();
+                    int currentVersionCode = getVersionCode();
+                    Log.e(TAG, "checkVersionUpdateWithHand newVersionCode:"+newVersionCode+", currentVersionCode:"+currentVersionCode);
+                    if(currentVersionCode<newVersionCode){
+                        //跳转到更新页面
+                        Uri uri = Uri.parse(response.getUrl());
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(intent);
+                    }else {
+                        Toast.makeText(MainActivity.this, "已是最新版本", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                Log.e(TAG, "检查版本更新, 网络错误:" + error);
+                Message msg = new Message();
+                msg.what=VOLLEY_ERROR;
+                msg.obj=error;
+                handler.sendMessage(msg);
+                loadingDialog.dismiss();
+            }
+
+            @Override
+            public Map getPostData() {
+                Map datas = new HashMap();
+                datas.put("userid", globalInfo.getUserid()+"");
+                datas.put("versioncode", versionCode + "");
+                datas.put("deviceid", getDeviceId());
+                return datas;
+            }
+        });
+        VolleyHelper.getInstance().addToRequestQueue(gsonRequest);
+    }
 }
-
-
-
