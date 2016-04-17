@@ -714,13 +714,13 @@ public class MainActivity extends AppCompatActivity {
         values.put("sportid", record.getSportid());
         values.put("amount", record.getAmount());
         //自1970年后的秒数
-        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
+        long time=TimeHelper.getDateStartOfDay(record.getTime()).getTime() / 1000;
         values.put("time", time);
         values.put("userid", ""+globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
     }
     private void updateSportDay(SportRecord record){
-        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
+        long time=TimeHelper.getDateStartOfDay(record.getTime()).getTime() / 1000;
         ContentValues values = new ContentValues();
         String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid();
         DbHelper.getInstance(this).getDb().execSQL(sql);
@@ -743,13 +743,13 @@ public class MainActivity extends AppCompatActivity {
         ContentValues values = new ContentValues();
         values.put("sportid", record.getSportid());
         values.put("amount", record.getAmount());
-        long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
+        long time = TimeHelper.getDateStartOfMonth(record.getTime()).getTime()/1000;
         values.put("time", time);
         values.put("userid", ""+globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record_month", null, values);
     }
     private void updateSportMonth(SportRecord record){
-        long time = TimeHelper.getDateStartOfMonth().getTime()/1000;
+        long time = TimeHelper.getDateStartOfMonth(record.getTime()).getTime()/1000;
         String sql = "update t_sport_record_month set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid()+" and time="+time;
         DbHelper.getInstance(this).getDb().execSQL(sql);
     }
@@ -1091,6 +1091,37 @@ public class MainActivity extends AppCompatActivity {
         values.put("seq", sportRecord.getSeq());
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
+
+    private void addSportRecordUpdateDayMonth(SportRecord sportRecord) {
+        //查询上一次的更新时间
+        Sport sport = loadSport(sportRecord.getSportid());
+
+        //handleSportDay(sportRecord);
+        //handleSportMonth(sportRecord);
+
+    };
+
+    /*
+    private void handleSportDay(SportRecord sportRecord){
+        ContentValues values = new ContentValues();
+        values.put("sportid", record.getSportid());
+        values.put("amount", record.getAmount());
+        //自1970年后的秒数
+        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
+        values.put("time", time);
+        values.put("userid", ""+globalInfo.getUserid());
+        DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
+
+        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
+        ContentValues values = new ContentValues();
+        String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid();
+        DbHelper.getInstance(this).getDb().execSQL(sql);
+
+    }
+    private void handleSportMonth(SportRecord sportRecord){
+
+    }
+    */
 
     private void checkVersionUpdate(){
         final int versionCode = getVersionCode();
