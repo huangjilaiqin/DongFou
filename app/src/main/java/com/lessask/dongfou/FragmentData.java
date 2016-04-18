@@ -25,6 +25,7 @@ import com.lessask.dongfou.util.DbDeleteListener;
 import com.lessask.dongfou.util.TimeHelper;
 
 import java.awt.font.TextAttribute;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -86,13 +87,13 @@ public class FragmentData extends Fragment {
             return;
         }
         sportName.setText(sport.getName());
-        avg.setText(sport.getAvg()+"");
+        avg.setText(new DecimalFormat(".0").format(sport.getAvg()));
         if(sport.getKind()==1)
             unit.setText(sport.getUnit());
         else if(sport.getKind()==2)
             unit.setText(sport.getUnit2());
 
-        total.setText(sport.getTotal() + "");
+        total.setText(new DecimalFormat(".0").format(sport.getTotal()));
         if(!sport.getLastTime().equals(new Date(0)))
             lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
         else

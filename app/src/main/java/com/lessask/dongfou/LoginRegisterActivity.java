@@ -466,8 +466,9 @@ public class LoginRegisterActivity extends AppCompatActivity {
         public void callback(Object obj) {
             SportRecord sportRecord = (SportRecord) obj;
 
-            DbHelper.handleSportDay(dbInstance, sportRecord);
-            int createNewDay = DbHelper.handleSportMonth(dbInstance,sportRecord);
+            int createNewDay = DbHelper.handleSportDay(dbInstance, sportRecord);
+            DbHelper.handleSportMonth(dbInstance,sportRecord);
+            Log.e(TAG, "createNewDay:"+createNewDay+", "+sportRecord.getSportid()+", "+sportRecord.getTime());
 
             //查询上一次的更新时间
             Sport sport = DbHelper.loadSportFromDb(getBaseContext(),sportRecord.getSportid());
@@ -475,7 +476,8 @@ public class LoginRegisterActivity extends AppCompatActivity {
             sport.setDays(sport.getDays() + createNewDay);
 
             //使用最新时间
-            sport.setLastTime(sportRecord.getTime());
+            if(sport.getLastTime().getTime()<sportRecord.getTime().getTime())
+                sport.setLastTime(sportRecord.getTime());
 
             sport.setFrequency(sport.getFrequency()+1);
             sport.setTotal(sport.getTotal()+sportRecord.getAmount());
