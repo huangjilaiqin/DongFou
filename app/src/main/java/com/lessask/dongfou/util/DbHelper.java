@@ -8,11 +8,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 
+import com.lessask.dongfou.Sport;
 import com.lessask.dongfou.SportRecord;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -90,6 +92,12 @@ public class DbHelper extends SQLiteOpenHelper{
             insertCallbacks.put(table, new ArrayList<DbInsertListener>());
         insertCallbacks.get(table).add(listener);
     }
+    public void clearInsertListener(String table){
+        List listeners = insertCallbacks.get(table);
+        if(listeners!=null)
+            listeners.clear();
+    }
+
     public void removeInsertListener(String table,DbInsertListener listener){
         ArrayList list = insertCallbacks.get(table);
         if(list!=null)
@@ -138,7 +146,7 @@ public class DbHelper extends SQLiteOpenHelper{
                 break;
         }
         Log.e(TAG, "delete record:"+whereClause+"， "+whereArgs[0]);
-        db.delete(table,whereClause,whereArgs);
+        db.delete(table, whereClause, whereArgs);
 
         if(deleteCallbacks.containsKey(table)) {
             for (DbDeleteListener listener : deleteCallbacks.get(table)) {
@@ -179,4 +187,74 @@ public class DbHelper extends SQLiteOpenHelper{
         return list;
     }
     */
+
+    //修改#天#单位下的数据统计
+    public static int handleSportDay(SQLiteDatabase db,SportRecord record){
+        int userid = record.getUserid();
+        long time=TimeHelper.getDateStartOfDay(record.getTime()).getTime() / 1000;
+        Cursor cr = db.rawQuery("select * from t_sport_record_day where userid=? and sportid=? and time=?",new String[]{userid+"",record.getSportid()+"",time+""});
+        //更新
+        int insertRow = 0;
+        if(cr.getCount()>0){
+            String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+userid;
+            db.execSQL(sql);
+        }else {
+            //插入
+            ContentValues values = new ContentValues();
+            values.put("sportid", record.getSportid());
+            values.put("amount", record.getAmount());
+            values.put("time", time);
+            values.put("userid", ""+userid);
+            db.insert("t_sport_record_day", null, values);
+            insertRow=1;
+        }
+        return insertRow;
+    }
+
+    //修改#月#单位下的数据统计
+    public static int handleSportMonth(SQLiteDatabase db,SportRecord record){
+        int userid = record.getUserid();
+        long time = TimeHelper.getDateStartOfMonth(record.getTime()).getTime()/1000;
+        Cursor cr = db.rawQuery("select * from t_sport_record_month where userid=? and sportid=? and time=?",new String[]{userid+"",record.getSportid()+"",time+""});
+        int insertRow = 0;
+        if(cr.getCount()>0){
+            String sql = "update t_sport_record_month set amount=amount+" + record.getAmount() + " where sportid=" + record.getSportid() + " and time=" + time + " and userid=" + userid + " and time=" + time;
+            db.execSQL(sql);
+        }else {
+            ContentValues values = new ContentValues();
+            values.put("sportid", record.getSportid());
+            values.put("amount", record.getAmount());
+            values.put("time", time);
+            values.put("userid", ""+userid);
+            db.insert("t_sport_record_month", null, values);
+            insertRow=1;
+        }
+        return insertRow;
+    }
+
+    public static void addSportRecordFromServer(Context context,SportRecord sportRecord){
+        //create table t_sport_record(id int primary key,amount real not null,int arg1 not null default 0,int arg2 not null default 0,time int NOT NULL,seq int not null default 0)");
+        ContentValues values = new ContentValues();
+
+        values.put("userid", "" + sportRecord.getUserid());
+        values.put("sportid", sportRecord.getSportid());
+        values.put("amount", ""+sportRecord.getAmount());
+        values.put("arg1", "" + sportRecord.getArg1());
+        values.put("arg2", ""+sportRecord.getArg2());
+        values.put("time", sportRecord.getTime().getTime() / 1000);
+        values.put("seq", sportRecord.getSeq());
+        DbHelper.getInstance(context).insert("t_sport_record", null, values);
+    }
+
+    public static Sport loadSportFromDb(Context context,int sportid){
+        Sport sport = null;
+        SQLiteDatabase db = DbHelper.getInstance(context).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
+        while (cr.moveToNext()) {
+            sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+        }
+        cr.close();
+        return sport;
+    }
 }

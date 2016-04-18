@@ -66,8 +66,10 @@ public class FragmentData extends Fragment {
                 mWeeks[6-i]=last+TimeHelper.getWeekNameOfDay(-i);
             else
                 mWeeks[6-i]=TimeHelper.getWeekNameOfDay(-i);
-            if(mWeeks[6-i].equals("周一"))
-                last="上";
+            if(mWeeks[6-i].equals("周日")) {
+                last = "上";
+                mWeeks[6-i]=last+mWeeks[6-i];
+            }
         }
         /*
         if(sportName==null)

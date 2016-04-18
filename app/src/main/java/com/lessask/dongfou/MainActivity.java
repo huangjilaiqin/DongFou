@@ -352,7 +352,11 @@ public class MainActivity extends AppCompatActivity {
                                         public void onClick(DialogInterface dialog, int which) {
                                             dialog.dismiss();
                                             //网络协议
-                                            deleteSportRecord(position);
+                                            if (globalInfo.getUserid() == 0){
+                                                deleteLocalSport(position);
+                                            }else {
+                                                deleteSportRecord(position);
+                                            }
                                         }
                                     });
                                     builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -370,6 +374,18 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void deleteLocalSport(int deletePostion){
+        SportRecord sportRecord = mRecyclerViewAdapter.getItem(deletePostion);
+        //删除数据库记录
+        deleteSportRecordDb(sportRecord);
+        //更新界面
+        Message msg = new Message();
+        msg.what = DELETE_SPORT;
+        msg.arg1 = deletePostion;
+        msg.obj = sportRecord;
+        handler.sendMessage(msg);
+    }
+
     private void deleteSportRecord(final int deletePostion){
         final LoadingDialog loadingDialog = new LoadingDialog(this);
         loadingDialog.setCancelable(false);
@@ -381,9 +397,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(SportRecord response) {
+                loadingDialog.dismiss();
                 if(response.getError()!=null){
-                    Toast.makeText(MainActivity.this, "error:"+response.getError(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "删除记录需联网", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(MainActivity.this, "error:"+response.getError(), Toast.LENGTH_SHORT).show();
                 }else {
+                    deleteLocalSport(deletePostion);
+                    /*
                     SportRecord sportRecord = mRecyclerViewAdapter.getItem(deletePostion);
                     //删除数据库记录
                     deleteSportRecordDb(sportRecord);
@@ -394,14 +414,17 @@ public class MainActivity extends AppCompatActivity {
                     msg.arg1 = deletePostion;
                     msg.obj = sportRecord;
                     handler.sendMessage(msg);
+                    */
                 }
-                loadingDialog.dismiss();
             }
 
             @Override
             public void onError(VolleyError error) {
-                Toast.makeText(MainActivity.this, "删除记录需联网", Toast.LENGTH_SHORT).show();
                 loadingDialog.dismiss();
+                Message msg = new Message();
+                msg.what=VOLLEY_ERROR;
+                msg.obj = error;
+                handler.sendMessage(msg);
             }
 
             @Override
@@ -566,9 +589,10 @@ public class MainActivity extends AppCompatActivity {
                 isSameMonth=false;
 
             sport.setLastTime(sportRecord.getTime());
+
             sport.setFrequency(sport.getFrequency()+1);
             sport.setTotal(sport.getTotal()+sportRecord.getAmount());
-            sport.setSeq(0);
+            sport.setSeq(sportRecord.getSeq());
             sport.setLastValue(sportRecord.getArg1());
             sport.setLastValue2(sportRecord.getArg2());
             //日均
@@ -947,7 +971,7 @@ public class MainActivity extends AppCompatActivity {
         }
         cr.close();
 
-        Log.e(TAG, "uploadRecord siez:"+sportRecords.size());
+        Log.e(TAG, "uploadRecord siez:" + sportRecords.size());
 
         Type type = new TypeToken<ArrayListResponse<SportRecord>>() {}.getType();
         GsonRequest gsonRequest = new GsonRequest<>(Request.Method.POST, Config.uploadRecordUrl, type, new GsonRequest.PostGsonRequest<ArrayListResponse>() {
@@ -1091,37 +1115,6 @@ public class MainActivity extends AppCompatActivity {
         values.put("seq", sportRecord.getSeq());
         DbHelper.getInstance(this).insert("t_sport_record", null, values);
     }
-
-    private void addSportRecordUpdateDayMonth(SportRecord sportRecord) {
-        //查询上一次的更新时间
-        Sport sport = loadSport(sportRecord.getSportid());
-
-        //handleSportDay(sportRecord);
-        //handleSportMonth(sportRecord);
-
-    };
-
-    /*
-    private void handleSportDay(SportRecord sportRecord){
-        ContentValues values = new ContentValues();
-        values.put("sportid", record.getSportid());
-        values.put("amount", record.getAmount());
-        //自1970年后的秒数
-        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
-        values.put("time", time);
-        values.put("userid", ""+globalInfo.getUserid());
-        DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
-
-        long time=TimeHelper.getDateStartOfDay().getTime() / 1000;
-        ContentValues values = new ContentValues();
-        String sql = "update t_sport_record_day set amount=amount+"+record.getAmount()+" where sportid="+record.getSportid()+" and time="+time+" and userid="+globalInfo.getUserid();
-        DbHelper.getInstance(this).getDb().execSQL(sql);
-
-    }
-    private void handleSportMonth(SportRecord sportRecord){
-
-    }
-    */
 
     private void checkVersionUpdate(){
         final int versionCode = getVersionCode();

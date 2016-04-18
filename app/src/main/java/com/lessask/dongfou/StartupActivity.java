@@ -19,6 +19,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.android.volley.Request;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.google.gson.reflect.TypeToken;
 import com.lessask.dongfou.net.GsonRequest;
@@ -35,6 +36,7 @@ public class StartupActivity extends AppCompatActivity {
     private String TAG = StartupActivity.class.getSimpleName();
     private SharedPreferences baseInfo;
     private final int HANDLER_MAIN = 1;
+    private final int VOLLEY_ERROR = 2;
 
     private Button enter;
     private ProgressBar loading;
@@ -52,6 +54,22 @@ public class StartupActivity extends AppCompatActivity {
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                     finish();
+                    break;
+                case VOLLEY_ERROR:
+                    VolleyError error = (VolleyError)msg.obj;
+                    if(error instanceof TimeoutError){
+                        Toast.makeText(StartupActivity.this, "连接超时,请检查网络", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.NoConnectionError){
+                        Toast.makeText(StartupActivity.this, "网络出问题了,请检查网络", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.NetworkError){
+                        Toast.makeText(StartupActivity.this, "网络出问题了,请检查网络", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.ServerError){
+                        Toast.makeText(StartupActivity.this, "服务器异常,我们在紧急抢修中", Toast.LENGTH_SHORT).show();
+                    }else if(error instanceof com.android.volley.ParseError){
+                        Toast.makeText(StartupActivity.this, "数据错误,请反馈或联系官方qq群", Toast.LENGTH_SHORT).show();
+                    }else {
+                        Toast.makeText(StartupActivity.this, "请升级到最新版再试,或联系我们", Toast.LENGTH_LONG).show();
+                    }
                     break;
                 default:
                     break;
@@ -197,7 +215,11 @@ public class StartupActivity extends AppCompatActivity {
             @Override
             public void onError(VolleyError error) {
                 Log.e(TAG, ""+error.getMessage());
-                Toast.makeText(StartupActivity.this, "请检查网络,第一次须同步运动类型列表", Toast.LENGTH_LONG).show();
+                Message msg = new Message();
+                msg.what=VOLLEY_ERROR;
+                msg.obj = error;
+                handler.sendMessage(msg);
+
                 loading.setVisibility(View.INVISIBLE);
                 enter.setVisibility(View.VISIBLE);
             }
