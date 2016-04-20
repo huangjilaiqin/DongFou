@@ -1234,6 +1234,9 @@ public class MainActivity extends AppCompatActivity {
                     logout();
                 }
                 break;
+            case R.id.test:
+                intent = new Intent(MainActivity.this, NewMainActivity.class);
+                startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
     }
