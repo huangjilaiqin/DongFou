@@ -113,108 +113,109 @@ public class FragmentData extends Fragment {
 
         sportName = (TextView)rootView.findViewById(R.id.sport_name);
 
-            avg = (TextView)rootView.findViewById(R.id.avg);
-            unit = (TextView)rootView.findViewById(R.id.unit);
-            total = (TextView)rootView.findViewById(R.id.total);
-            lastTime = (TextView)rootView.findViewById(R.id.last_time);
+        avg = (TextView)rootView.findViewById(R.id.avg);
+        unit = (TextView)rootView.findViewById(R.id.unit);
+        total = (TextView)rootView.findViewById(R.id.total);
+        lastTime = (TextView)rootView.findViewById(R.id.last_time);
 
-            /*
-            sportName.setText(sport.getName());
-            avg.setText(sport.getAvg()+"");
-            if(sport.getKind()==1)
-                unit.setText(sport.getUnit());
-            else if(sport.getKind()==2)
-                unit.setText(sport.getUnit2());
+        /*
+        sportName.setText(sport.getName());
+        avg.setText(sport.getAvg()+"");
+        if(sport.getKind()==1)
+            unit.setText(sport.getUnit());
+        else if(sport.getKind()==2)
+            unit.setText(sport.getUnit2());
 
-            total.setText(sport.getTotal()+"");
-            if(!sport.getLastTime().equals(new Date(0)))
-                lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
-            else
-                lastTime.setText("无运动记录");
-                */
-
-
-            mChart = (BarChart) rootView.findViewById(R.id.chart);
-
-            mChart.setDrawBarShadow(false);
-            mChart.setDrawValueAboveBar(true);
-
-            mChart.setDrawHighlightArrow(false);
-            mChart.getXAxis().setDrawGridLines(false);
-
-            // if more than 60 entries are displayed in the chart, no values will be
-            // drawn
-            mChart.setMaxVisibleValueCount(60);
-
-            // scaling can now only be done on x- and y-axis separately
-            mChart.setPinchZoom(false);
-
-            mChart.setDrawGridBackground(false);
-            mChart.setTouchEnabled(false);
-            mChart.setDescription("");
-
-            /*
-            YAxis leftAxis = mChart.getAxisLeft();
-            leftAxis.removeAllLimitLines(); // reset all limit lines to avoid overlapping lines
-            leftAxis.setTypeface(mTf);
-            leftAxis.setTextSize(8f);
-            leftAxis.setTextColor(Color.DKGRAY);
-            leftAxis.setValueFormatter(new PercentFormatter());
-
-            XAxis xAxis = mChart.getXAxis();
-            xAxis.setTypeface(mTf);
-            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-            xAxis.setTextSize(8f);
-            xAxis.setTextColor(Color.DKGRAY);
-
+        total.setText(sport.getTotal()+"");
+        if(!sport.getLastTime().equals(new Date(0)))
+            lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
+        else
+            lastTime.setText("无运动记录");
             */
 
-            mChart.getAxisRight().setEnabled(false);
-            mChart.getAxisLeft().setDrawGridLines(false);
-            mChart.getAxisLeft().setEnabled(false);
-            //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
 
-            XAxis xAxis = mChart.getXAxis();
-            xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-            xAxis.setTypeface(mTf);
-            xAxis.setDrawGridLines(false);
-            xAxis.setSpaceBetweenLabels(2);
+        mChart = (BarChart) rootView.findViewById(R.id.chart);
 
-            YAxisValueFormatter custom = new YAxisValueFormatter() {
-                @Override
-                public String getFormattedValue(float value, YAxis yAxis) {
-                    return ""+value;
-                }
-            };
+        mChart.setDrawBarShadow(false);
+        mChart.setDrawValueAboveBar(true);
 
-            YAxis leftAxis = mChart.getAxisLeft();
-            leftAxis.setTypeface(mTf);
-            leftAxis.setLabelCount(8, false);
-            leftAxis.setValueFormatter(custom);
-            leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-            leftAxis.setSpaceTop(15f);
-            leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+        mChart.setDrawHighlightArrow(false);
+        mChart.getXAxis().setDrawGridLines(false);
 
-            YAxis rightAxis = mChart.getAxisRight();
-            rightAxis.setDrawGridLines(false);
-            rightAxis.setTypeface(mTf);
-            rightAxis.setLabelCount(8, false);
-            rightAxis.setValueFormatter(custom);
-            rightAxis.setSpaceTop(15f);
-            rightAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+        // if more than 60 entries are displayed in the chart, no values will be
+        // drawn
+        mChart.setMaxVisibleValueCount(60);
 
-            //对每种颜色的柱状图说明
-            mChart.getLegend().setEnabled(false);
-            /*
-            Legend l = mChart.getLegend();
-            l.setPosition(Legend.LegendPosition.BELOW_CHART_LEFT);
-            l.setForm(Legend.LegendForm.SQUARE);
-            l.setFormSize(9f);
-            l.setTextSize(11f);
-            l.setXEntrySpace(4f);
-            */
+        // scaling can now only be done on x- and y-axis separately
+        mChart.setPinchZoom(false);
 
-            //setData(7);
+        mChart.setDrawGridBackground(false);
+        mChart.setTouchEnabled(false);
+        mChart.setDescription("");
+
+
+        /*
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.removeAllLimitLines(); // reset all limit lines to avoid overlapping lines
+        leftAxis.setTypeface(mTf);
+        leftAxis.setTextSize(8f);
+        leftAxis.setTextColor(Color.DKGRAY);
+        leftAxis.setValueFormatter(new PercentFormatter());
+
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setTypeface(mTf);
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setTextSize(8f);
+        xAxis.setTextColor(Color.DKGRAY);
+
+        */
+
+        mChart.getAxisRight().setEnabled(false);
+        mChart.getAxisLeft().setDrawGridLines(false);
+        mChart.getAxisLeft().setEnabled(false);
+        //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
+
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setTypeface(mTf);
+        xAxis.setDrawGridLines(false);
+        xAxis.setSpaceBetweenLabels(2);
+
+        YAxisValueFormatter custom = new YAxisValueFormatter() {
+                                 @Override
+                                 public String getFormattedValue(float value, YAxis yAxis) {
+                                                    return ""+value;
+                                                                                                    }
+                                                                                                    };
+
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.setTypeface(mTf);
+        leftAxis.setLabelCount(8, false);
+        leftAxis.setValueFormatter(custom);
+        leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceTop(15f);
+        leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setDrawGridLines(false);
+        rightAxis.setTypeface(mTf);
+        rightAxis.setLabelCount(8, false);
+        rightAxis.setValueFormatter(custom);
+        rightAxis.setSpaceTop(15f);
+        rightAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
+        //对每种颜色的柱状图说明
+        mChart.getLegend().setEnabled(false);
+        /*
+        Legend l = mChart.getLegend();
+        l.setPosition(Legend.LegendPosition.BELOW_CHART_LEFT);
+        l.setForm(Legend.LegendForm.SQUARE);
+        l.setFormSize(9f);
+        l.setTextSize(11f);
+        l.setXEntrySpace(4f);
+        */
+
+        //setData(7);
         update();
     }
 

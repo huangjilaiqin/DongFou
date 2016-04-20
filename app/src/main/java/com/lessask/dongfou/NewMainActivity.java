@@ -10,6 +10,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.YAxisValueFormatter;
+import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.lessask.dongfou.model.StatictisSportRecord;
 
 import java.util.ArrayList;
@@ -20,6 +28,7 @@ public class NewMainActivity extends AppCompatActivity {
 
     private XRecyclerView mRecyclerView;
     private SportRecordAdapter mRecyclerViewAdapter;
+    private BarChart mChart;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,7 +40,11 @@ public class NewMainActivity extends AppCompatActivity {
         mRecyclerViewAdapter.appendToList(getRecordDatas());
 
         View mHeaderView = LayoutInflater.from(this).inflate(R.layout.new_data_header,mRecyclerView,false);
+        mChart = (BarChart)mHeaderView.findViewById(R.id.chart);
+        initChart();
+        setData(365);
         //View footView = LayoutInflater.from(thi.inflate(R.layout.data_foot,mRecyclerView,false);
+        /*
         RecyclerView detailList = (RecyclerView)mHeaderView.findViewById(R.id.detail_list);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
@@ -40,7 +53,100 @@ public class NewMainActivity extends AppCompatActivity {
         StatisticsRecordAdapter statisticsRecordAdapter = new StatisticsRecordAdapter(this);
         detailList.setAdapter(statisticsRecordAdapter);
         statisticsRecordAdapter.appendToList(getDetailDatas());
+        */
         mRecyclerView.addHeaderView(mHeaderView);
+    }
+
+    private void initChart(){
+
+        mChart.setDrawBarShadow(false);
+        mChart.setDrawValueAboveBar(true);
+
+        mChart.setDrawHighlightArrow(false);
+        mChart.getXAxis().setDrawGridLines(false);
+
+        // if more than 60 entries are displayed in the chart, no values will be
+        // drawn
+        mChart.setMaxVisibleValueCount(60);
+
+        // scaling can now only be done on x- and y-axis separately
+        mChart.setPinchZoom(false);
+
+        mChart.setDrawGridBackground(false);
+        mChart.setScaleEnabled(false);
+        //mChart.setTouchEnabled(false);
+        mChart.setDescription("");
+
+        mChart.getAxisRight().setEnabled(false);
+        mChart.getAxisLeft().setDrawGridLines(false);
+        mChart.getAxisLeft().setEnabled(false);
+        //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
+
+        XAxis xAxis = mChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        //xAxis.setTypeface(mTf);
+        xAxis.setDrawGridLines(false);
+        xAxis.setSpaceBetweenLabels(2);
+
+        YAxisValueFormatter custom = new YAxisValueFormatter() {
+                                 @Override
+                                 public String getFormattedValue(float value, YAxis yAxis) {
+                                                    return ""+value;
+                                                                                                    }
+                                                                                                    };
+
+        YAxis leftAxis = mChart.getAxisLeft();
+        //leftAxis.setTypeface(mTf);
+        leftAxis.setLabelCount(8, false);
+        leftAxis.setValueFormatter(custom);
+        leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceTop(15f);
+        leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
+        YAxis rightAxis = mChart.getAxisRight();
+        rightAxis.setDrawGridLines(false);
+        //rightAxis.setTypeface(mTf);
+        rightAxis.setLabelCount(8, false);
+        rightAxis.setValueFormatter(custom);
+        rightAxis.setSpaceTop(15f);
+        rightAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
+        //对每种颜色的柱状图说明
+        mChart.getLegend().setEnabled(false);
+    }
+
+    private void setData(int count) {
+
+        ArrayList<String> xVals = new ArrayList<String>();
+        for (int i = 0; i < count; i++) {
+            xVals.add(i+"");
+        }
+
+        ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
+
+        for (int i = 0; i < count; i++) {
+            yVals1.add(new BarEntry(10+i, i));
+        }
+
+        BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
+        set1.setLabel("跑步");
+        set1.setLabel("");
+        set1.setColor(getResources().getColor(R.color.colorAccent1));
+        set1.setBarSpacePercent(35f);
+
+        ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
+        dataSets.add(set1);
+
+        BarData data = new BarData(xVals, dataSets);
+        data.setValueTextSize(10f);
+        //data.setValueTypeface(mTf);
+
+        mChart.setData(data);
+        //mChart.animate();
+        //mChart.animateX(1000);
+        mChart.setScaleMinima(365/7, 1);
+        mChart.animateY(1000);
+
     }
 
     private List getRecordDatas(){

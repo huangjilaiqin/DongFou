@@ -5,10 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.lessask.dongfou.NewMainActivity">
-
     <com.lessask.dongfou.XRecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"></com.lessask.dongfou.XRecyclerView>
-
 </RelativeLayout>
