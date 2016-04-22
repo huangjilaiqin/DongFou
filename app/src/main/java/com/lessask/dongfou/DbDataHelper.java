@@ -33,12 +33,82 @@ public class DbDataHelper {
         cr.close();
         return sport;
     }
-    public static List<Float> loadSportRecordById(Context context,int sportid){
+
+    private static List<SportRecord> loadSportRecordById(Context context,int sportid){
+
+        List<SportRecord> records = new ArrayList<>();
+        SQLiteDatabase db = DbHelper.getInstance(context).getDb();
+        //Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where userid=" + globalInfo.getUserid() + " and sportid=" + sportid + " and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
+        Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where userid=" + globalInfo.getUserid() + " and sportid=" + sportid + " order by time ", null);
+        Date minTime = TimeHelper.getDateStartOfDay(-6);
+        Date maxTime = TimeHelper.getDateStartOfDay();
+
+        List<SportRecord> tmpRecords = new ArrayList<>();
+        boolean isFirst = true;
+        long timeNum=0;
+        while (cr.moveToNext()){
+            float amount = cr.getInt(0);
+            timeNum = cr.getLong(1)*1000;
+            Date time = new Date(timeNum);
+            SportRecord record = new SportRecord();
+            record.setAmount(amount);
+            record.setTime(new Date(timeNum));
+            if(isFirst){
+                if(timeNum<minTime.getTime())
+                    record.setTime(new Date(timeNum));
+                else
+                    record.setTime(minTime);
+                tmpRecords.add(record);
+            }else {
+                tmpRecords.add(record);
+            }
+        }
+        cr.close();
+        if(tmpRecords.size()==0){
+            SportRecord record = new SportRecord();
+            record.setAmount(0f);
+            record.setTime(minTime);
+            tmpRecords.add(record);
+        }
+        if(timeNum<maxTime.getTime()){
+            SportRecord record = new SportRecord();
+            record.setAmount(0f);
+            record.setTime(maxTime);
+            tmpRecords.add(record);
+        }
+
+        int tmpSize = tmpRecords.size();
+        for(int i=0;i<tmpSize;i++){
+            SportRecord record = tmpRecords.get(i);
+            timeNum = record.getTime().getTime();
+            records.add(record);
+            if(i+1==tmpSize)
+                break;
+
+            int deltaDays = TimeHelper.getDateDelta(record.getTime(),tmpRecords.get(i+1).getTime());
+            for(int j=0;j<deltaDays;j++) {
+                record = new SportRecord();
+                record.setAmount(0f);
+                record.setTime(new Date(timeNum+86400*(deltaDays+1)));
+                records.add(record);
+            }
+        }
+        StringBuilder builder = new StringBuilder();
+        /*
+        builder.append("sportid:" + sportid + ": ");
+        for(int i=0;i<amounts.size();i++)
+            builder.append(amounts.get(i)+",");
+        Log.e(TAG, builder.toString());
+        */
+        return records;
+    }
+    /*
+    public static List<SportRecord> loadSportRecordById(Context context,int sportid){
 
         SQLiteDatabase db = DbHelper.getInstance(context).getDb();
         Cursor cr = db.rawQuery("select amount,time from t_sport_record_day where userid="+globalInfo.getUserid() +" and sportid="+sportid+" and date(time,'unixepoch','localtime')>date('now','-7 day') order by time ", null);
         Log.e(TAG, "record size:"+cr.getCount());
-        List<Float> amounts = new ArrayList<>();
+        List<SportRecord> records = new ArrayList<>();
         Date lastTime = TimeHelper.getDateStartOfDay(-6);
         Log.e(TAG, "lasttime: "+lastTime.toString());
         int index=0;
@@ -46,8 +116,9 @@ public class DbDataHelper {
             float amount = cr.getInt(0);
             Date time = new Date(cr.getLong(1)*1000);
             int deltaDays = TimeHelper.getDateDelta(lastTime,time);
-            for(int i=0;i<deltaDays;i++)
-                amounts.add(0f);
+            for(int i=0;i<deltaDays;i++) {
+                .add(0f);
+            }
             amounts.add(amount);
             lastTime= TimeHelper.getDateStartOfDay(time,1);
         }
@@ -62,4 +133,5 @@ public class DbDataHelper {
         Log.e(TAG, builder.toString());
         return amounts;
     }
+    */
 }

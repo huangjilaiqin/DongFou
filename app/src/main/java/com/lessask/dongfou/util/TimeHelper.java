@@ -293,12 +293,12 @@ public class TimeHelper {
         return calendar.getTime();
     }
 
-    public static int getDateDelta(Date date1, Date date2) {
+    public static int getDateDelta(Date datest, Date dateed) {
         Calendar calst = Calendar.getInstance();
         Calendar caled = Calendar.getInstance();
 
-        calst.setTime(date1);
-        caled.setTime(date2);
+        calst.setTime(datest);
+        caled.setTime(dateed);
 
          //设置时间为0时
          calst.set(Calendar.HOUR_OF_DAY, 0);

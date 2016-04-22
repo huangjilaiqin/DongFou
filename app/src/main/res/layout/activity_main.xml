@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    >
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/appbar"
@@ -19,12 +19,12 @@
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="?attr/actionBarSize"
             app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
             android:background="@color/main_color"
-            app:layout_scrollFlags="scroll|enterAlways"
             />
+        <!--
         <LinearLayout
             android:orientation="vertical"
             android:layout_width="match_parent"
@@ -50,9 +50,10 @@
                 android:layout_marginBottom="8dp"
                 />
         </LinearLayout>
+        -->
     </android.support.design.widget.AppBarLayout>
 
-    <android.support.v7.widget.RecyclerView
+    <com.lessask.dongfou.XRecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -60,7 +61,6 @@
         android:focusable="false"
         android:scrollbars="none"
         android:gravity="center"
-        android:fitsSystemWindows="true"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         />
 

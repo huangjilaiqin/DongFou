@@ -1,6 +1,8 @@
 package com.lessask.dongfou;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -9,8 +11,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -88,12 +92,14 @@ public class NewMainActivity extends AppCompatActivity {
         xAxis.setDrawGridLines(false);
         xAxis.setSpaceBetweenLabels(2);
 
+
+
         YAxisValueFormatter custom = new YAxisValueFormatter() {
-                                 @Override
-                                 public String getFormattedValue(float value, YAxis yAxis) {
-                                                    return ""+value;
-                                                                                                    }
-                                                                                                    };
+            @Override
+            public String getFormattedValue(float value, YAxis yAxis) {
+                return ""+value;
+            }
+        };
 
         YAxis leftAxis = mChart.getAxisLeft();
         //leftAxis.setTypeface(mTf);
@@ -102,6 +108,16 @@ public class NewMainActivity extends AppCompatActivity {
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         leftAxis.setSpaceTop(15f);
         leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
+        LimitLine ll = new LimitLine(200f, "");
+        ll.setLineColor(getResources().getColor(R.color.white_bg_border));
+        ll.setLineWidth(1f);
+        ll.enableDashedLine(5,5,0);
+        ll.setTextStyle(Paint.Style.STROKE);
+        ll.setTextColor(Color.GRAY);
+        ll.setTextSize(12f);
+        // .. and more styling options
+        leftAxis.addLimitLine(ll);
 
         YAxis rightAxis = mChart.getAxisRight();
         rightAxis.setDrawGridLines(false);
@@ -129,6 +145,7 @@ public class NewMainActivity extends AppCompatActivity {
         }
 
         BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
+        set1.setDrawValues(false);
         set1.setLabel("跑步");
         set1.setLabel("");
         set1.setColor(getResources().getColor(R.color.colorAccent1));
@@ -142,11 +159,10 @@ public class NewMainActivity extends AppCompatActivity {
         //data.setValueTypeface(mTf);
 
         mChart.setData(data);
-        //mChart.animate();
-        //mChart.animateX(1000);
-        mChart.setScaleMinima(365/7, 1);
+        mChart.setDrawValueAboveBar(false);
+        mChart.setVisibleXRangeMaximum(30);
+        mChart.moveViewToX(335);
         mChart.animateY(1000);
-
     }
 
     private List getRecordDatas(){

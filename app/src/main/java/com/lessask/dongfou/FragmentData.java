@@ -57,7 +57,7 @@ public class FragmentData extends Fragment {
 
     public void setSportGather(SportGather sportGather) {
         this.sportGather = sportGather;
-        this.sportValues = sportGather.getSportRecords();
+        //this.sportValues = sportGather.getSportRecords();
 
         this.sport = sportGather.getSport();
         this.sportid=sport.getId();
@@ -222,7 +222,7 @@ public class FragmentData extends Fragment {
     private void loadData(){
         if(sport==null || sportValues==null) {
             sport = DbDataHelper.loadSportFromDb(getContext(), sportid);
-            sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
+            //sportValues = DbDataHelper.loadSportRecordById(getContext(), sportid);
         }
     }
 

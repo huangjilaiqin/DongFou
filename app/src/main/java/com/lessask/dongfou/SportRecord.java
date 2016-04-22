@@ -15,6 +15,7 @@ public class SportRecord extends ResponseError {
     private Date time;
     private int userid;
 
+    public SportRecord(){}
     public SportRecord(int id, int sportid, float amount, float arg1, float arg2, int seq, Date time,int userid) {
         this.id = id;
         this.sportid = sportid;
