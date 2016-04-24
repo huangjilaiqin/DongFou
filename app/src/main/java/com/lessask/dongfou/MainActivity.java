@@ -19,8 +19,8 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.AppCompatSpinner;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -28,24 +28,41 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Cache;
 import com.android.volley.Request;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.capricorn.ArcMenu;
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
+import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.data.CandleEntry;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.YAxisValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.gson.reflect.TypeToken;
 import com.lessask.dongfou.dialog.LoadingDialog;
 import com.lessask.dongfou.dialog.MenuDialog;
@@ -59,6 +76,7 @@ import com.lessask.dongfou.util.DbDeleteListener;
 import com.lessask.dongfou.util.DbHelper;
 import com.lessask.dongfou.util.DbInsertListener;
 import com.lessask.dongfou.util.GlobalInfo;
+import com.lessask.dongfou.util.SportDbHelper;
 import com.lessask.dongfou.util.TimeHelper;
 import com.viewpagerindicator.CirclePageIndicator;
 
@@ -67,10 +85,13 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnChartValueSelectedListener {
 
     private XRecyclerView mRecyclerView;
     //private RecyclerView mRecyclerView;
@@ -107,16 +128,32 @@ public class MainActivity extends AppCompatActivity {
     private DbHelper dbHelper;
     private SQLiteDatabase dbInstance;
 
+
     SharedPreferences baseInfo;
     SharedPreferences.Editor editor;
 
     //头部数据
     private BarChart mChart;
-    private TextView sportName;
-    private TextView avg;
+    private AppCompatSpinner sportName;
     private TextView unit;
     private TextView total;
-    private TextView lastTime;
+
+    //体重围度头部数据
+    private LineChart mWeightChart;
+    private AppCompatSpinner sportName1;
+    private TextView weight;
+
+    private ArrayList<String> sportNameData;
+    //private MySpinnerAdapter sportNameAdapter;
+    private ArrayAdapter sportNameAdapter;
+    private int currentPosition=0;
+    private View mHeaderView;
+    private RelativeLayout dataHeader;
+    private RelativeLayout weightDataHeader;
+    //private View mWeightHeaderView;
+    private ProgressBar targeProgressBar1;
+
+    private SportDbHelper sportDbHelper;
 
     private Handler handler = new Handler(){
         SportRecord sportRecord;
@@ -126,8 +163,9 @@ public class MainActivity extends AppCompatActivity {
                 case ADD_SPORT:
                     Log.e(TAG, "ADD_SPORT");
                     sportRecord = (SportRecord)msg.obj;
-                    updateFragments(sportRecord);
-                    mViewPager.setCurrentItem(0);
+                    //updateFragments(sportRecord);
+                    //mViewPager.setCurrentItem(0);
+                    updateHeader(sportRecord);
                     mRecyclerView.scrollToPosition(0);
                     break;
                 case DELETE_SPORT:
@@ -235,11 +273,14 @@ public class MainActivity extends AppCompatActivity {
         baseInfo = getSharedPreferences("BaseInfo", MODE_PRIVATE);
         editor = baseInfo.edit();
 
+        sportDbHelper = new SportDbHelper(this);
+
         dbHelper = DbHelper.getInstance(this);
         dbInstance = dbHelper.getDb();
         sportMap = new HashMap<>();
         sportGathers = new ArrayList<>();
         menuImages = new ArrayList<>();
+        sportNameData = new ArrayList<>();
 
         //程序后台太久，单例的内容也会被删除, 检查userid
         if(globalInfo.getUserid()==0){
@@ -256,16 +297,27 @@ public class MainActivity extends AppCompatActivity {
 
         mRecyclerView = (XRecyclerView) findViewById(R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        View mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
+
+        mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
+        dataHeader = (RelativeLayout)mHeaderView.findViewById(R.id.data_header);
+        weightDataHeader = (RelativeLayout)mHeaderView.findViewById(R.id.weight_header);
         mChart=(BarChart)mHeaderView.findViewById(R.id.chart);
-        sportName=(TextView)mHeaderView.findViewById(R.id.sport_name);
-        avg=(TextView)mHeaderView.findViewById(R.id.avg);
+        sportName=(AppCompatSpinner)mHeaderView.findViewById(R.id.sport_name);
         unit=(TextView)mHeaderView.findViewById(R.id.unit);
         total=(TextView)mHeaderView.findViewById(R.id.total);
-        lastTime=(TextView)mHeaderView.findViewById(R.id.last_time);
+        targeProgressBar1=(ProgressBar)mHeaderView.findViewById(R.id.target);
+        //targeProgressBar1.setProgress(30);
         //View footView = LayoutInflater.from(thi.inflate(R.layout.data_foot,mRecyclerView,false);
         mRecyclerView.addHeaderView(mHeaderView);
+
         initChart();
+        mChart.setOnChartValueSelectedListener(this);
+
+        mWeightChart=(LineChart)mHeaderView.findViewById(R.id.weight_chart);
+        sportName1=(AppCompatSpinner)mHeaderView.findViewById(R.id.sport_name1);
+        weight=(TextView)mHeaderView.findViewById(R.id.weight);
+        initWeightChart();
+
 
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
         DbHelper.getInstance(this).appendDeleteListener("t_sport_record", sportRecordDeleteListener);
@@ -276,7 +328,11 @@ public class MainActivity extends AppCompatActivity {
 
         //加载运动列表为空, 可能是globalInfo中的userid获取不到了
         loadDatas();
+
+
         setChartData(sportGathers.get(0));
+        //setWeightChartData(sportGathers.get(0));
+
 
         /*
         mFragmentDataPagerAdapter = new FragmentDataPagerAdapter(getSupportFragmentManager());
@@ -317,7 +373,53 @@ public class MainActivity extends AppCompatActivity {
 
         arcMenu = (ArcMenu) findViewById(R.id.arc_menu);
         initMenu();
+
+        for(int i=0;i<sportGathers.size();i++){
+            Sport sport = sportGathers.get(i).getSport();
+            sportNameData.add(sport.getName());
+        }
+        sportNameData.add("体重/围度");
+        sportNameAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,sportNameData);
+        sportNameAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sportName.setAdapter(sportNameAdapter);
+        sportName.setOnItemSelectedListener(spinnerListener);
+        sportName1.setAdapter(sportNameAdapter);
+        sportName1.setOnItemSelectedListener(spinnerListener);
+        //sportName.setSelection(0);
     }
+
+    private AdapterView.OnItemSelectedListener spinnerListener = new AdapterView.OnItemSelectedListener() {
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            //更换头部
+            if(currentPosition+1<sportNameData.size() && position+1==sportNameData.size()){
+                //上次不是体重这次是体重
+                dataHeader.setVisibility(View.GONE);
+                weightDataHeader.setVisibility(View.VISIBLE);
+                weightDataHeader.invalidate();
+            }else if(currentPosition+1==sportNameData.size() && position+1<sportNameData.size()){
+                //上次是体重这次不是体重
+                weightDataHeader.setVisibility(View.GONE);
+                dataHeader.setVisibility(View.VISIBLE);
+                dataHeader.invalidate();
+            }
+            if(position+1==sportNameData.size()){
+                //体重数据设置
+                setWeightChartData(sportGathers.get(0));
+            }else {
+                //运动数据设置
+                setChartData(sportGathers.get(position));
+            }
+            currentPosition=position;
+            sportName.setSelection(position);
+            sportName1.setSelection(position);
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {
+
+        }
+    };
 
     private void reloadData(){
         //加载运动列表为空, 可能是globalInfo中的userid获取不到了
@@ -357,7 +459,6 @@ public class MainActivity extends AppCompatActivity {
                             Intent intent;
                             switch (menupos) {
                                 case 0:
-                                    //删除课程
                                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                                     StringBuilder detail = new StringBuilder();
                                     int kind = sport.getKind();
@@ -706,6 +807,72 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private class MySpinnerAdapter extends BaseAdapter{
+        private List<String> datas;
+        private Context mContext;
+
+        MySpinnerAdapter(Context mContext,List datas){
+            this.mContext=mContext;
+            this.datas=datas;
+        }
+        @Override
+        public int getCount() {
+            return datas.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return null;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            LayoutInflater _LayoutInflater=LayoutInflater.from(mContext);
+            convertView=_LayoutInflater.inflate(R.layout.sportname_spinner, null);
+            if(convertView!=null) {
+                TextView _TextView1 = (TextView) convertView.findViewById(R.id.name);
+                _TextView1.setText(datas.get(position));
+            }
+            return convertView;
+        }
+    }
+
+
+    private void updateHeader(SportRecord sportRecord){
+        int i=0;
+        for (;i<sportGathers.size();i++){
+            SportGather sportGather = sportGathers.get(i);
+            if(sportGather.getSport().getId()==sportRecord.getSportid()){
+                sportGathers.remove(i);
+                break;
+            }
+        }
+        //不包含的情况，移除最后一项
+        if(i==sportGathers.size()){
+            int pos = sportGathers.size()-1;
+            sportGathers.remove(pos);
+        }
+        sportGathers.add(0, loadSportGatherFromDb(sportRecord.getSportid()));
+        setChartData(sportGathers.get(0));
+
+        //更新下拉菜单
+        sportNameData.clear();
+        for(i=0;i<sportGathers.size();i++){
+            Sport sport = sportGathers.get(i).getSport();
+            sportNameData.add(sport.getName());
+        }
+        sportNameData.add("体重/围度");
+        sportNameAdapter.notifyDataSetChanged();
+        sportName.setSelection(0);
+
+        updateMenu();
+    }
+
     private void updateFragments(SportRecord sportRecord){
         int i=0;
         for (;i<sportGathers.size();i++){
@@ -787,7 +954,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void deleteSportRecordDb(SportRecord record){
-        Log.e(TAG, "delete record:"+record.getId());
+        Log.e(TAG, "delete record:" + record.getId());
         DbHelper.getInstance(this).delete("t_sport_record", "id=?", new String[]{record.getId() + ""}, record);
     }
 
@@ -805,7 +972,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("amount", record.getAmount());
         long time = TimeHelper.getDateStartOfMonth(record.getTime()).getTime()/1000;
         values.put("time", time);
-        values.put("userid", ""+globalInfo.getUserid());
+        values.put("userid", "" + globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record_month", null, values);
     }
     private void updateSportMonth(SportRecord record){
@@ -852,12 +1019,6 @@ public class MainActivity extends AppCompatActivity {
         //id int primary key,name text not null,image text not null,type int not null,unit text not null,unit2 text null,int maxnum not null,frequency int not null default 0)");
         Cursor cr = db.rawQuery("select * from t_sport where userid="+globalInfo.getUserid()+" order by lasttime desc,id limit 5", null);
         while (cr.moveToNext()){
-            //int id, String name, String image,int kind,String unit,String unit2,int maxnum,int frequency) {
-            /*
-            db.execSQL("create table t_sport(id int primary key,name text not null,image text not null,kind int not null,unit text not null,maxnum int not null" +
-                    ",unit2 text null,maxnum2 int not null,frequency int default 0,total real default 0,avg real not null,days int not null," +
-                    "lasttime int NOT NULL,seq int not null default 0,lastvalue int default 0,lastvalue2 int default 0)");
-                    */
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
             sportMap.put(sport.getId(), sport);
@@ -887,16 +1048,16 @@ public class MainActivity extends AppCompatActivity {
             SportRecord record = new SportRecord();
             record.setAmount(amount);
             record.setTime(new Date(timeNum));
-            if(isFirst){
-                if(timeNum<minTime.getTime())
-                    record.setTime(new Date(timeNum));
-                else
-                    record.setTime(minTime);
-                tmpRecords.add(record);
+
+            //第一条记录 且 大于最小时间  则 将最小时间作为一个0记录插入
+            if(isFirst && timeNum>minTime.getTime()){
+                SportRecord minRecord = new SportRecord();
+                minRecord.setAmount(0);
+                minRecord.setTime(minTime);
+                tmpRecords.add(minRecord);
                 isFirst=false;
-            }else {
-                tmpRecords.add(record);
             }
+            tmpRecords.add(record);
         }
         cr.close();
         if(tmpRecords.size()==0){
@@ -1518,6 +1679,9 @@ public class MainActivity extends AppCompatActivity {
         mChart.setDrawHighlightArrow(false);
         mChart.getXAxis().setDrawGridLines(false);
 
+        //头部点击出现数值
+        //mChart.setMarkerView(new MyMarkerView(MainActivity.this,R.layout.my_mark_view));
+
         // if more than 60 entries are displayed in the chart, no values will be
         // drawn
         mChart.setMaxVisibleValueCount(60);
@@ -1556,15 +1720,7 @@ public class MainActivity extends AppCompatActivity {
         leftAxis.setSpaceTop(15f);
         leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
 
-        LimitLine ll = new LimitLine(200f, "");
-        ll.setLineColor(getResources().getColor(R.color.white_bg_border));
-        ll.setLineWidth(1f);
-        ll.enableDashedLine(5,5,0);
-        ll.setTextStyle(Paint.Style.STROKE);
-        ll.setTextColor(Color.GRAY);
-        ll.setTextSize(12f);
-        // .. and more styling options
-        leftAxis.addLimitLine(ll);
+
 
         YAxis rightAxis = mChart.getAxisRight();
         rightAxis.setDrawGridLines(false);
@@ -1577,25 +1733,58 @@ public class MainActivity extends AppCompatActivity {
         //对每种颜色的柱状图说明
         mChart.getLegend().setEnabled(false);
     }
+
+    private void initWeightChart(){
+
+        mWeightChart.getXAxis().setDrawGridLines(false);
+
+        mWeightChart.setPinchZoom(false);
+
+        mWeightChart.setDrawGridBackground(false);
+        mWeightChart.setScaleEnabled(false);
+        //mChart.setTouchEnabled(false);
+        mWeightChart.setDescription("");
+
+        mWeightChart.getAxisRight().setEnabled(false);
+        mWeightChart.getAxisLeft().setDrawGridLines(false);
+        mWeightChart.getAxisLeft().setEnabled(false);
+        //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
+
+        XAxis xAxis = mWeightChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        //xAxis.setTypeface(mTf);
+        xAxis.setDrawGridLines(false);
+        xAxis.setSpaceBetweenLabels(2);
+
+        YAxisValueFormatter custom = new YAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float value, YAxis yAxis) {
+                return ""+value;
+            }
+        };
+
+        YAxis leftAxis = mWeightChart.getAxisLeft();
+        leftAxis.setLabelCount(8, false);
+        leftAxis.setValueFormatter(custom);
+        leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceTop(15f);
+        leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+
+        //对每种颜色的柱状图说明
+        //mChart.getLegend().setEnabled(false);
+    }
     private void setChartData(SportGather sportGather) {
         Sport sport = sportGather.getSport();
-        sportName.setText(sport.getName());
-        avg.setText(new DecimalFormat(".0").format(sport.getAvg()));
         if(sport.getKind()==1)
             unit.setText(sport.getUnit());
         else if(sport.getKind()==2)
             unit.setText(sport.getUnit2());
 
-        total.setText(new DecimalFormat(".0").format(sport.getTotal()));
-        if(!sport.getLastTime().equals(new Date(0)))
-            lastTime.setText(TimeHelper.date2Chat(sport.getLastTime()));
-        else
-            lastTime.setText("无运动记录");
+        total.setText(new DecimalFormat("0.0").format(sport.getTotal()));
 
         List<SportRecord> sportRecords = sportGather.getSportRecords();
 
         ArrayList<String> xVals = new ArrayList<String>();
-
         ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
 
         Date todayBegin = TimeHelper.getDateStartOfDay();
@@ -1611,10 +1800,13 @@ public class MainActivity extends AppCompatActivity {
         BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
         //设置显示数值
         //set1.setDrawValues(false);
-        set1.setLabel("跑步");
+        set1.setHighlightEnabled(false);
+        //set1.setHighLightAlpha(100);
+        //set1.setHighLightColor();
+
         set1.setLabel("");
         set1.setColor(getResources().getColor(R.color.colorAccent1));
-        set1.setBarSpacePercent(35f);
+        set1.setBarSpacePercent(5f);
 
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
         dataSets.add(set1);
@@ -1622,11 +1814,205 @@ public class MainActivity extends AppCompatActivity {
         BarData data = new BarData(xVals, dataSets);
         data.setValueTextSize(10f);
         //data.setValueTypeface(mTf);
+        YAxis leftAxis = mChart.getAxisLeft();
+        leftAxis.removeAllLimitLines();
+        if(sport.getAvg()>0){
+            LimitLine ll = new LimitLine(sport.getAvg(), "");
+            ll.setLineColor(getResources().getColor(R.color.white_bg_border));
+            ll.setLineWidth(1f);
+            ll.enableDashedLine(5,5,0);
+            ll.setTextStyle(Paint.Style.STROKE);
+            ll.setTextColor(Color.GRAY);
+            ll.setTextSize(12f);
+            // .. and more styling options
+            leftAxis.addLimitLine(ll);
+        }
 
         mChart.setData(data);
         //mChart.setDrawValueAboveBar(false);
         mChart.setVisibleXRangeMaximum(7);
-        mChart.moveViewToX(335);
+        mChart.setVisibleXRangeMinimum(7);
+        mChart.moveViewToX(sportRecords.size());
         mChart.animateY(1000);
+        mChart.invalidate();
+    }
+    private void setWeightChartData(SportGather sportGather) {
+        //加载体重数据
+        //设置体重数据
+        weight.setText("129.5");
+
+        //加载体重、围度记录
+        List<SportRecord> records = sportDbHelper.loadWeightRecord();
+
+        Date minTime,maxTime;
+        minTime=maxTime=null;
+        Map<Integer,List> everyRecords = new HashMap<>();
+        for(int i=0;i<records.size();i++){
+            SportRecord record = records.get(i);
+            int recordid = record.getId();
+            Date time = record.getTime();
+            if(minTime==null || maxTime==null)
+            if(time.getTime()<minTime.getTime()) {
+                minTime = maxTime = time;
+            }
+            if(time.getTime()<minTime.getTime())
+                minTime=time;
+            if(time.getTime()>maxTime.getTime())
+                maxTime=time;
+
+            if(!everyRecords.containsKey(recordid))
+                everyRecords.put(recordid, new ArrayList());
+            everyRecords.get(recordid).add(record);
+        }
+
+        ArrayList<String> xVals = new ArrayList<String>();
+        for (Date time = minTime; time.getTime() <= maxTime.getTime(); ) {
+            xVals.add(TimeHelper.dateFormat(time, "M/d"));
+            time = new Date(time.getTime()+86400000);
+        }
+
+
+        ArrayList<ArrayList<Entry>> yVals = new ArrayList<ArrayList<Entry>>();
+        int pos=0;
+        for (Map.Entry<Integer, List> entry : everyRecords.entrySet()) {
+            int sportid = entry.getKey();
+            List<SportRecord> records1 = entry.getValue();
+            ArrayList<Entry> yVal = yVals.get(pos);
+            for (int i=0;i<records1.size();i++){
+                SportRecord record = records1.get(i);
+                yVal.add(new Entry(records1.get(i).getAmount(),i));
+            }
+        }
+        //to do 填充数据集中空缺的数据
+
+        if (mWeightChart.getData() != null && mWeightChart.getData().getDataSetCount() > 0) {
+            set1 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(0);
+            set2 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(1);
+            set1.setYVals(yVals1);
+            set2.setYVals(yVals2);
+            mWeightChart.getData().setXVals(xVals);
+            mWeightChart.notifyDataSetChanged();
+        } else {
+            // create a dataset and give it a type
+            set1 = new LineDataSet(yVals1, "体重");
+            set1.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            set1.setDrawCircles(false);
+            set1.setDrawValues(false);
+
+            set1.setAxisDependency(YAxis.AxisDependency.LEFT);
+            set1.setColor(ColorTemplate.getHoloBlue());
+            set1.setCircleColor(Color.WHITE);
+            set1.setLineWidth(2f);
+            set1.setCircleRadius(3f);
+            set1.setFillAlpha(65);
+            set1.setFillColor(ColorTemplate.getHoloBlue());
+            set1.setHighLightColor(Color.rgb(244, 117, 117));
+            set1.setDrawCircleHole(false);
+
+            ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
+            dataSets.add(set1); // add the datasets
+
+            LineData data = new LineData(xVals, dataSets);
+            data.setValueTextColor(Color.WHITE);
+            data.setValueTextSize(9f);
+
+            // set data
+            mWeightChart.setData(data);
+        }
+        set1.setHighlightEnabled(false);
+
+
+        ArrayList<Entry> yVals1 = new ArrayList<Entry>();
+        ArrayList<Entry> yVals2 = new ArrayList<Entry>();
+        ArrayList<Entry> yVals3 = new ArrayList<Entry>();
+        for (int i = 0; i < 25; i++) {
+            float mult = 50;
+            float val = (float) (Math.random() * mult) + 50;// + (float)
+            yVals1.add(new Entry(val, i));
+        }
+        for (int i = 0; i < 32; i++) {
+            float mult = 50;
+            float val = (float) (Math.random() * mult) + 50;// + (float)
+            yVals2.add(new Entry(val, i));
+        }
+        for (int i = 0; i < 25; i++) {
+            float mult = 50;
+            float val = (float) (Math.random() * mult) + 50;// + (float)
+            yVals3.add(new Entry(val, i));
+        }
+
+        LineDataSet set1, set2;
+
+        if (mWeightChart.getData() != null && mWeightChart.getData().getDataSetCount() > 0) {
+            set1 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(0);
+            set2 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(1);
+            set1.setYVals(yVals1);
+            set2.setYVals(yVals2);
+            mWeightChart.getData().setXVals(xVals);
+            mWeightChart.notifyDataSetChanged();
+        } else {
+            // create a dataset and give it a type
+            set1 = new LineDataSet(yVals1, "体重");
+            set1.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            set1.setDrawCircles(false);
+            set1.setDrawValues(false);
+
+            set1.setAxisDependency(YAxis.AxisDependency.LEFT);
+            set1.setColor(ColorTemplate.getHoloBlue());
+            set1.setCircleColor(Color.WHITE);
+            set1.setLineWidth(2f);
+            set1.setCircleRadius(3f);
+            set1.setFillAlpha(65);
+            set1.setFillColor(ColorTemplate.getHoloBlue());
+            set1.setHighLightColor(Color.rgb(244, 117, 117));
+            set1.setDrawCircleHole(false);
+            //set1.setFillFormatter(new MyFillFormatter(0f));
+            //set1.setDrawHorizontalHighlightIndicator(false);
+            //set1.setVisible(false);
+            //set1.setCircleHoleColor(Color.WHITE);
+
+            // create a dataset and give it a type
+            set2 = new LineDataSet(yVals2, "腰围");
+            set2.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            set2.setDrawCircles(false);
+            set2.setDrawValues(false);
+
+            set2.setAxisDependency(YAxis.AxisDependency.RIGHT);
+            set2.setColor(Color.RED);
+            set2.setCircleColor(Color.WHITE);
+            set2.setLineWidth(2f);
+            set2.setCircleRadius(3f);
+            set2.setFillAlpha(65);
+            set2.setFillColor(Color.RED);
+            set2.setDrawCircleHole(false);
+            set2.setHighLightColor(Color.rgb(244, 117, 117));
+            //set2.setFillFormatter(new MyFillFormatter(900f));
+
+            ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
+            dataSets.add(set2);
+            dataSets.add(set1); // add the datasets
+
+            // create a data object with the datasets
+            LineData data = new LineData(xVals, dataSets);
+            data.setValueTextColor(Color.WHITE);
+            data.setValueTextSize(9f);
+
+            // set data
+            mWeightChart.setData(data);
+        }
+        set1.setHighlightEnabled(false);
+        set2.setHighlightEnabled(false);
+
+        mWeightChart.invalidate();
+    }
+
+    @Override
+    public void onValueSelected(Entry e, int dataSetIndex, Highlight h) {
+        //Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onNothingSelected() {
+
     }
 }

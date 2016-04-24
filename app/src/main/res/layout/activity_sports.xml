@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -7,6 +8,7 @@
     >
 
     <android.support.design.widget.AppBarLayout
+        android:id="@+id/toolbar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         >
@@ -20,5 +22,104 @@
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
             />
     </android.support.design.widget.AppBarLayout>
-    <include layout="@layout/content_sports" />
-</android.support.design.widget.CoordinatorLayout>
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/weight_list"
+        android:layout_below="@id/toolbar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        />
+    <RelativeLayout
+        android:layout_below="@id/weight_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.lessask.dongfou.RecyclerViewStatusSupport
+            android:id="@+id/show_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#f6f6f6"
+            android:focusable="false"
+            android:scrollbars="none"
+            android:gravity="center"
+            />
+        <RelativeLayout
+            android:id="@+id/empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background_white_not_transparent"
+            >
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                >
+                <TextView
+                    android:id="@+id/tips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:textColor="@color/black_35"
+                    android:textSize="16dp"
+                    android:text="没有搜索结果,您可以帮助我们完善运动类型"
+                    />
+                <EditText
+                    android:id="@+id/addsport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/tips"
+                    android:layout_marginTop="16dp"
+                    android:hint="新增运动类型..."
+                    android:textColorHint="#979797"
+                    android:lines="1"
+                    />
+                <Button
+                    android:id="@+id/add"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/addsport"
+                    android:layout_marginTop="8dp"
+                    android:text="提交"
+                    />
+            </RelativeLayout>
+        </RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/loading_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background_white_not_transparent"
+            >
+            <TextView
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="loading"
+                />
+        </RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/error_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background_white_not_transparent"
+            >
+            <TextView
+                android:id="@+id/error_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="error"
+                />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/error_text"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="8dp"
+                android:text="点击刷新"
+                />
+        </RelativeLayout>
+    </RelativeLayout>
+</RelativeLayout>
