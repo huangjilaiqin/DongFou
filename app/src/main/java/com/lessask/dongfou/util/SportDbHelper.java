@@ -77,7 +77,7 @@ public class SportDbHelper {
         return sport;
     }
 
-    public Sport loadWeightFromDb(int sportid){
+    public Sport loadWeightFromDbById(int sportid){
         Sport sport = null;
         SQLiteDatabase db = DbHelper.getInstance(context).getDb();
         Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
@@ -107,6 +107,31 @@ public class SportDbHelper {
         SQLiteDatabase db = DbHelper.getInstance(context).getDb();
         Cursor cr = db.rawQuery("select r.* from t_sport as s inner join t_sport_record as r on (s.id=r.sportid) where r.userid=" + globalInfo.getUserid() + " and s.kind=3 order by r.time", null);
         // select r.* from t_sport as s inner join t_sport_record as r where s.kind=3 order by r.time desc
+        ArrayList<SportRecord> sportRecords=new ArrayList<>();
+        while (cr.moveToNext()){
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            sportRecords.add(sportRecord);
+        }
+        cr.close();
+        return sportRecords;
+    }
+
+    public ArrayList<Sport> loadWeightFromDb(int userid){
+        Sport sport = null;
+        SQLiteDatabase db = DbHelper.getInstance(context).getDb();
+        ArrayList<Sport> sports =new ArrayList<>();
+        Cursor cr = db.rawQuery("select * from t_sport where kind=3 and userid=" + userid, null);
+        while (cr.moveToNext()) {
+            sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+            sports.add(sport);
+        }
+        cr.close();
+        return sports;
+    }
+    public List<SportRecord> loadWeightRecordById(int userid,int sportid){
+        SQLiteDatabase db = DbHelper.getInstance(context).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport_record where userid=" + userid + " and sportid="+sportid+" order by time", null);
         ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
             SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));

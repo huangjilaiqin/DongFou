@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.AppCompatSpinner;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -156,6 +157,11 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     private ProgressBar targeProgressBar1;
 
     private SportDbHelper sportDbHelper;
+
+    private ArrayList<Sport> weights;
+
+    private RecyclerView mWeightRecyclerView;
+    private WeightAdapter mWeightAdapter;
 
     private Handler handler = new Handler(){
         SportRecord sportRecord;
@@ -318,6 +324,30 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightChart=(LineChart)mHeaderView.findViewById(R.id.weight_chart);
         sportName1=(AppCompatSpinner)mHeaderView.findViewById(R.id.sport_name1);
         weight=(TextView)mHeaderView.findViewById(R.id.weight);
+        mWeightRecyclerView = (RecyclerView) mHeaderView.findViewById(R.id.weight_list);
+        //用线性的方式显示listview
+        LinearLayoutManager mLinearLayoutManager = new LinearLayoutManager(this);
+        mLinearLayoutManager = new LinearLayoutManager(this);
+        mLinearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+        mWeightRecyclerView.setLayoutManager(mLinearLayoutManager);
+
+        mWeightAdapter = new WeightAdapter(this);
+        mWeightRecyclerView.setAdapter(mWeightAdapter);
+
+        mWeightAdapter.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, final int position) {
+                Sport sport = mWeightAdapter.getItem(position);
+                //Toast.makeText(SportsActivity.this, sport.getName(), Toast.LENGTH_SHORT).show();
+                showDataDialog(sport);
+                setWeightChartData(sport);
+            }
+
+        });
+        ArrayList<Sport> weights = sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
+        mWeightAdapter.appendToList(weights);
+        mWeightAdapter.notifyDataSetChanged();
+
         initWeightChart();
         weightDataHeader.setVisibility(View.GONE);
 
@@ -407,7 +437,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             }
             if(position+1==sportNameData.size()){
                 //体重数据设置
-                setWeightChartData();
+                if(weights==null)
+                    weights=sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
+                setWeightChartData(weights.get(0));
             }else {
                 //运动数据设置
                 setChartData(sportGathers.get(position));
@@ -1770,8 +1802,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         leftAxis.setSpaceTop(15f);
-        leftAxis.setAxisMaxValue(70f);
-        leftAxis.setAxisMinValue(40f); // this replaces setStartAtZero(true)
+        //leftAxis.setAxisMaxValue(70f);
+        //leftAxis.setAxisMinValue(40f); // this replaces setStartAtZero(true)
 
         //对每种颜色的柱状图说明
         //mChart.getLegend().setEnabled(false);
@@ -1839,20 +1871,21 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mChart.animateY(1000);
         mChart.invalidate();
     }
-    private void setWeightChartData() {
+    private void setWeightChartData(Sport sport) {
         //加载体重数据
         //设置体重数据
-        weight.setText("129.5");
+
+        weight.setText("129.3");
 
         //加载体重、围度记录
-        List<SportRecord> records = sportDbHelper.loadWeightRecord();
+        List<SportRecord> records = sportDbHelper.loadWeightRecordById(globalInfo.getUserid(),sport.getId());
         //如果没有数据的时候
 
+        /* 同时显示全部维度数据
         Map<Integer,List> everyRecords = new HashMap<>();
         for(int i=0;i<records.size();i++){
             SportRecord record = records.get(i);
             int sportid = record.getSportid();
-            Date time = record.getTime();
             if(!everyRecords.containsKey(sportid))
                 everyRecords.put(sportid, new ArrayList());
             everyRecords.get(sportid).add(record);
@@ -1908,58 +1941,87 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             yVals.add(yVal);
             pos++;
         }
+        */
+
+        Date minTime;
+        Date maxTime;
+        if(records.size()>0){
+            minTime = records.get(0).getTime();
+            maxTime = records.get(records.size()-1).getTime();
+        }else
+            minTime=maxTime=null;
+
+        ArrayList<String> xVals = new ArrayList<String>();
+        Map<Long,Integer> time2pos = new HashMap<>();
+        int pos=0;
+        long minTimeNum = TimeHelper.getDateStartOfDay(minTime).getTime();
+        long maxTimeNum = TimeHelper.getDateStartOfDay(maxTime).getTime();
+        long timeNum = minTimeNum;
+        while(timeNum<=maxTimeNum){
+            time2pos.put(timeNum,pos);
+            xVals.add(TimeHelper.dateFormat(new Date(timeNum), "M/d"));
+            timeNum+=86400000;
+            pos++;
+        }
+
+        //int[] colors = new int[]{0xFF0000,0xFFA500,0xFFFF00,0x008000,0x0000FF,0x4B0082,0x800880};
+        int[] colors = new int[]{Color.rgb(255,0,0),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
+
+        ArrayList<Entry> yVal = new ArrayList<Entry>();
+        //各种类型的参考线
+        pos=0;
+        float maxNum=0,minNum=0;
+        for (int i=0;i<records.size();i++){
+            SportRecord record = records.get(i);
+            float amount = record.getAmount();
+            if(maxNum==0 || minNum==0)
+                minNum=maxNum=amount;
+            if(amount>maxNum)
+                maxNum=amount;
+            if(amount<minNum)
+                minNum=amount;
+
+            timeNum = TimeHelper.getDateStartOfDay(record.getTime()).getTime();
+            int index = time2pos.get(timeNum);
+            yVal.add(new Entry(records.get(i).getAmount(),index));
+        }
+        float line = records.get(records.size()-1).getAmount();
 
         YAxis leftAxis = mWeightChart.getAxisLeft();
+        leftAxis.removeAllLimitLines();
+        leftAxis.setAxisMaxValue(maxNum*1.2f);
+        leftAxis.setAxisMinValue(minNum*1.2f); // this replaces setStartAtZero(true)
 
         if (mWeightChart.getData() != null && mWeightChart.getData().getDataSetCount() > 0) {
-            for(int i=0;i<sortedKeys.size();i++){
-                int sportid = sortedKeys.get(i);
-                LineDataSet set = (LineDataSet) mWeightChart.getData().getDataSetByLabel(sportid+"", true);
-                set.setYVals(yVals.get(i));
-                break;
-            }
+            LineDataSet set = (LineDataSet) mWeightChart.getData().getDataSetByIndex(0);
+            set.setYVals(yVal);
             mWeightChart.getData().setXVals(xVals);
             mWeightChart.notifyDataSetChanged();
         } else {
             ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
 
-            for(int i=0;i<yVals.size();i++){
-                ArrayList<Entry> yVal = yVals.get(i);
-                LineDataSet set = new LineDataSet(yVal, ""+sortedKeys.get(i));
-                set.setLabel(sortedKeys.get(i) + "");
-                //赛贝斯曲线
-                set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-                //set.setDrawCircles(false);
-                set.setDrawValues(false);
+            LineDataSet set = new LineDataSet(yVal, sport.getName());
+            //赛贝斯曲线
+            set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            //set.setDrawCircles(false);
+            set.setDrawValues(false);
 
-                set.setAxisDependency(YAxis.AxisDependency.LEFT);
-                //set.setColor(ColorTemplate.getHoloBlue());
-                set.setColor(colors[i]);
-                set.setCircleColor(colors[i]);
-                set.setLineWidth(2f);
-                set.setCircleRadius(3f);
-                //set.setFillAlpha(65);
-                //set.setFillColor(ColorTemplate.getHoloBlue());
-                //set.setHighLightColor(Color.rgb(244, 117, 117));
-                //set.setDrawCircleHole(false);
-                set.setHighlightEnabled(false);
+            set.setAxisDependency(YAxis.AxisDependency.LEFT);
+            //set.setColor(ColorTemplate.getHoloBlue());
+            set.setColor(colors[0]);
+            set.setCircleColor(colors[0]);
+            set.setLineWidth(2f);
+            set.setCircleRadius(3f);
+            //set.setFillAlpha(65);
+            //set.setFillColor(ColorTemplate.getHoloBlue());
+            //set.setHighLightColor(Color.rgb(244, 117, 117));
+            //set.setDrawCircleHole(false);
+            set.setHighlightEnabled(false);
 
-                /*
-                LimitLine ll = new LimitLine(lines.get(i), "");
-                ll.setLineColor(colors[i]);
-                ll.setLineWidth(1f);
-                ll.enableDashedLine(5,5,0);
-                ll.setTextStyle(Paint.Style.STROKE);
-                ll.setTextColor(Color.GRAY);
-                ll.setTextSize(12f);
-                // .. and more styling options
-                leftAxis.addLimitLine(ll);
-                */
 
-                dataSets.add(set); // add the datasets
-                break;
 
-            }
+            dataSets.add(set); // add the datasets
+
             // create a dataset and give it a type
 
 
@@ -1970,6 +2032,15 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             // set data
             mWeightChart.setData(data);
         }
+        LimitLine ll = new LimitLine(line, "");
+        ll.setLineColor(colors[0]);
+        ll.setLineWidth(1f);
+        ll.enableDashedLine(5,5,0);
+        ll.setTextStyle(Paint.Style.STROKE);
+        ll.setTextColor(Color.GRAY);
+        ll.setTextSize(12f);
+        // .. and more styling options
+        leftAxis.addLimitLine(ll);
 
 
         /*
