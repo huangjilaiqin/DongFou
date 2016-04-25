@@ -83,9 +83,11 @@ import com.viewpagerindicator.CirclePageIndicator;
 import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -317,6 +319,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         sportName1=(AppCompatSpinner)mHeaderView.findViewById(R.id.sport_name1);
         weight=(TextView)mHeaderView.findViewById(R.id.weight);
         initWeightChart();
+        weightDataHeader.setVisibility(View.GONE);
 
 
         DbHelper.getInstance(this).appendInsertListener("t_sport_record", sportRecordInsertListener);
@@ -331,7 +334,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
 
         setChartData(sportGathers.get(0));
-        //setWeightChartData(sportGathers.get(0));
 
 
         /*
@@ -405,7 +407,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             }
             if(position+1==sportNameData.size()){
                 //体重数据设置
-                setWeightChartData(sportGathers.get(0));
+                setWeightChartData();
             }else {
                 //运动数据设置
                 setChartData(sportGathers.get(position));
@@ -1746,14 +1748,14 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightChart.setDescription("");
 
         mWeightChart.getAxisRight().setEnabled(false);
-        mWeightChart.getAxisLeft().setDrawGridLines(false);
-        mWeightChart.getAxisLeft().setEnabled(false);
+        //mWeightChart.getAxisLeft().setDrawGridLines(false);
+        //mWeightChart.getAxisLeft().setEnabled(false);
         //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
 
         XAxis xAxis = mWeightChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         //xAxis.setTypeface(mTf);
-        xAxis.setDrawGridLines(false);
+        //xAxis.setDrawGridLines(false);
         xAxis.setSpaceBetweenLabels(2);
 
         YAxisValueFormatter custom = new YAxisValueFormatter() {
@@ -1768,7 +1770,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         leftAxis.setSpaceTop(15f);
-        leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
+        leftAxis.setAxisMaxValue(70f);
+        leftAxis.setAxisMinValue(40f); // this replaces setStartAtZero(true)
 
         //对每种颜色的柱状图说明
         //mChart.getLegend().setEnabled(false);
@@ -1836,81 +1839,129 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mChart.animateY(1000);
         mChart.invalidate();
     }
-    private void setWeightChartData(SportGather sportGather) {
+    private void setWeightChartData() {
         //加载体重数据
         //设置体重数据
         weight.setText("129.5");
 
         //加载体重、围度记录
         List<SportRecord> records = sportDbHelper.loadWeightRecord();
+        //如果没有数据的时候
 
-        Date minTime,maxTime;
-        minTime=maxTime=null;
         Map<Integer,List> everyRecords = new HashMap<>();
         for(int i=0;i<records.size();i++){
             SportRecord record = records.get(i);
-            int recordid = record.getId();
+            int sportid = record.getSportid();
             Date time = record.getTime();
-            if(minTime==null || maxTime==null)
-            if(time.getTime()<minTime.getTime()) {
-                minTime = maxTime = time;
-            }
-            if(time.getTime()<minTime.getTime())
-                minTime=time;
-            if(time.getTime()>maxTime.getTime())
-                maxTime=time;
-
-            if(!everyRecords.containsKey(recordid))
-                everyRecords.put(recordid, new ArrayList());
-            everyRecords.get(recordid).add(record);
+            if(!everyRecords.containsKey(sportid))
+                everyRecords.put(sportid, new ArrayList());
+            everyRecords.get(sportid).add(record);
         }
+        Date minTime;
+        Date maxTime;
+        if(records.size()>0){
+            minTime = records.get(0).getTime();
+            maxTime = records.get(records.size()-1).getTime();
+        }else
+            minTime=maxTime=null;
 
         ArrayList<String> xVals = new ArrayList<String>();
-        for (Date time = minTime; time.getTime() <= maxTime.getTime(); ) {
-            xVals.add(TimeHelper.dateFormat(time, "M/d"));
-            time = new Date(time.getTime()+86400000);
+        Map<Long,Integer> time2pos = new HashMap<>();
+        int pos=0;
+        long minTimeNum = TimeHelper.getDateStartOfDay(minTime).getTime();
+        long maxTimeNum = TimeHelper.getDateStartOfDay(maxTime).getTime();
+        long timeNum = minTimeNum;
+        while(timeNum<=maxTimeNum){
+            time2pos.put(timeNum,pos);
+            xVals.add(TimeHelper.dateFormat(new Date(timeNum), "M/d"));
+            timeNum+=86400000;
+            pos++;
         }
 
+        //对纬度类型id进行排序
+        ArrayList<Integer> sortedKeys = new ArrayList<>();
+        Iterator<Integer> iterator = everyRecords.keySet().iterator();
+        while (iterator.hasNext())
+            sortedKeys.add(iterator.next());
+        Collections.sort(sortedKeys);
+
+        //int[] colors = new int[]{0xFF0000,0xFFA500,0xFFFF00,0x008000,0x0000FF,0x4B0082,0x800880};
+        int[] colors = new int[]{Color.rgb(255,0,0),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
 
         ArrayList<ArrayList<Entry>> yVals = new ArrayList<ArrayList<Entry>>();
-        int pos=0;
-        for (Map.Entry<Integer, List> entry : everyRecords.entrySet()) {
-            int sportid = entry.getKey();
-            List<SportRecord> records1 = entry.getValue();
-            ArrayList<Entry> yVal = yVals.get(pos);
+        //各种类型的参考线
+        ArrayList<Float> lines = new ArrayList<>();
+        pos=0;
+        iterator = sortedKeys.iterator();
+        while (iterator.hasNext()){
+        //for (Map.Entry<Integer, List> entry : everyRecords.entrySet()) {
+            int sportid = iterator.next();
+            List<SportRecord> records1 = everyRecords.get(sportid);
+            ArrayList<Entry> yVal = new ArrayList<>();
             for (int i=0;i<records1.size();i++){
                 SportRecord record = records1.get(i);
-                yVal.add(new Entry(records1.get(i).getAmount(),i));
+                timeNum = TimeHelper.getDateStartOfDay(record.getTime()).getTime();
+                int index = time2pos.get(timeNum);
+                yVal.add(new Entry(records1.get(i).getAmount(),index));
             }
+            lines.add(records1.get(records1.size()-1).getAmount());
+            yVals.add(yVal);
+            pos++;
         }
-        //to do 填充数据集中空缺的数据
+
+        YAxis leftAxis = mWeightChart.getAxisLeft();
 
         if (mWeightChart.getData() != null && mWeightChart.getData().getDataSetCount() > 0) {
-            set1 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(0);
-            set2 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(1);
-            set1.setYVals(yVals1);
-            set2.setYVals(yVals2);
+            for(int i=0;i<sortedKeys.size();i++){
+                int sportid = sortedKeys.get(i);
+                LineDataSet set = (LineDataSet) mWeightChart.getData().getDataSetByLabel(sportid+"", true);
+                set.setYVals(yVals.get(i));
+                break;
+            }
             mWeightChart.getData().setXVals(xVals);
             mWeightChart.notifyDataSetChanged();
         } else {
-            // create a dataset and give it a type
-            set1 = new LineDataSet(yVals1, "体重");
-            set1.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            set1.setDrawCircles(false);
-            set1.setDrawValues(false);
-
-            set1.setAxisDependency(YAxis.AxisDependency.LEFT);
-            set1.setColor(ColorTemplate.getHoloBlue());
-            set1.setCircleColor(Color.WHITE);
-            set1.setLineWidth(2f);
-            set1.setCircleRadius(3f);
-            set1.setFillAlpha(65);
-            set1.setFillColor(ColorTemplate.getHoloBlue());
-            set1.setHighLightColor(Color.rgb(244, 117, 117));
-            set1.setDrawCircleHole(false);
-
             ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
-            dataSets.add(set1); // add the datasets
+
+            for(int i=0;i<yVals.size();i++){
+                ArrayList<Entry> yVal = yVals.get(i);
+                LineDataSet set = new LineDataSet(yVal, ""+sortedKeys.get(i));
+                set.setLabel(sortedKeys.get(i) + "");
+                //赛贝斯曲线
+                set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+                //set.setDrawCircles(false);
+                set.setDrawValues(false);
+
+                set.setAxisDependency(YAxis.AxisDependency.LEFT);
+                //set.setColor(ColorTemplate.getHoloBlue());
+                set.setColor(colors[i]);
+                set.setCircleColor(colors[i]);
+                set.setLineWidth(2f);
+                set.setCircleRadius(3f);
+                //set.setFillAlpha(65);
+                //set.setFillColor(ColorTemplate.getHoloBlue());
+                //set.setHighLightColor(Color.rgb(244, 117, 117));
+                //set.setDrawCircleHole(false);
+                set.setHighlightEnabled(false);
+
+                /*
+                LimitLine ll = new LimitLine(lines.get(i), "");
+                ll.setLineColor(colors[i]);
+                ll.setLineWidth(1f);
+                ll.enableDashedLine(5,5,0);
+                ll.setTextStyle(Paint.Style.STROKE);
+                ll.setTextColor(Color.GRAY);
+                ll.setTextSize(12f);
+                // .. and more styling options
+                leftAxis.addLimitLine(ll);
+                */
+
+                dataSets.add(set); // add the datasets
+                break;
+
+            }
+            // create a dataset and give it a type
+
 
             LineData data = new LineData(xVals, dataSets);
             data.setValueTextColor(Color.WHITE);
@@ -1919,26 +1970,33 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             // set data
             mWeightChart.setData(data);
         }
-        set1.setHighlightEnabled(false);
 
 
+        /*
+        //ArrayList<String> xVals = new ArrayList<String>();
+
+        for (int i = 0; i < 35; i++) {
+            xVals.add(i+"");
+        }
         ArrayList<Entry> yVals1 = new ArrayList<Entry>();
         ArrayList<Entry> yVals2 = new ArrayList<Entry>();
         ArrayList<Entry> yVals3 = new ArrayList<Entry>();
-        for (int i = 0; i < 25; i++) {
+        for (int i = 15; i < 25; i++) {
             float mult = 50;
             float val = (float) (Math.random() * mult) + 50;// + (float)
             yVals1.add(new Entry(val, i));
         }
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < 32; ) {
             float mult = 50;
             float val = (float) (Math.random() * mult) + 50;// + (float)
             yVals2.add(new Entry(val, i));
+            i+=2;
         }
-        for (int i = 0; i < 25; i++) {
+        for (int i = 5; i < 25; i++) {
             float mult = 50;
             float val = (float) (Math.random() * mult) + 50;// + (float)
             yVals3.add(new Entry(val, i));
+            i+=3;
         }
 
         LineDataSet set1, set2;
@@ -2002,6 +2060,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         }
         set1.setHighlightEnabled(false);
         set2.setHighlightEnabled(false);
+        */
 
         mWeightChart.invalidate();
     }

@@ -105,7 +105,8 @@ public class SportDbHelper {
 
     public List<SportRecord> loadWeightRecord(){
         SQLiteDatabase db = DbHelper.getInstance(context).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport_record where userid=" + globalInfo.getUserid() + " and kind=3 order by time desc", null);
+        Cursor cr = db.rawQuery("select r.* from t_sport as s inner join t_sport_record as r on (s.id=r.sportid) where r.userid=" + globalInfo.getUserid() + " and s.kind=3 order by r.time", null);
+        // select r.* from t_sport as s inner join t_sport_record as r where s.kind=3 order by r.time desc
         ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
             SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
