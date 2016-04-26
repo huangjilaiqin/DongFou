@@ -27,11 +27,15 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
     private String[] values2;
     private float initValue2;
     private String unit2;
+    private int currentIndex;
+    private int currentIndex2;
 
 
     public void setEditable(boolean flag){
-        if(flag==false)
+        if(flag==false) {
             numberPicker.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+            numberPicker2.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+        }
     }
 
     private void init(Context context){
@@ -48,8 +52,15 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue((int)(initValue-1));
+        currentIndex = (int)(initValue - 1);
+        numberPicker.setValue(currentIndex);
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
+        numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                currentIndex = newVal;
+            }
+        });
         TextView unitView = (TextView)view.findViewById(R.id.unit);
         unitView.setText(unit);
 
@@ -57,8 +68,15 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         numberPicker2.setDisplayedValues(values2);
         numberPicker2.setMinValue(0);
         numberPicker2.setMaxValue(values2.length - 1);
-        numberPicker2.setValue((int)(initValue2-1));
+        currentIndex2 = (int)(initValue2 - 1);
+        numberPicker2.setValue(currentIndex2);
         numberPicker2.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
+        numberPicker2.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                currentIndex2=newVal;
+            }
+        });
         TextView unitView2 = (TextView)view.findViewById(R.id.unit2);
         unitView2.setText(unit2);
 
@@ -68,6 +86,7 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         this.title = title;
         this.initValue = initValue;
         this.initValue2 = initValue2;
+        currentIndex2=(int)initValue2;
         this.unit=unit;
         this.unit2=uint2;
 
@@ -89,7 +108,7 @@ public class StringPickerTwoDialog extends AlertDialog implements DialogInterfac
         switch (which) {
             case BUTTON_POSITIVE:
                 if (mSelectCallBack != null) {
-                    mSelectCallBack.onSelect(numberPicker.getValue()+1,numberPicker2.getValue()+1);
+                    mSelectCallBack.onSelect(Integer.parseInt(values[currentIndex]),Integer.parseInt(values2[currentIndex2]));
                 }
                 break;
             case BUTTON_NEGATIVE:

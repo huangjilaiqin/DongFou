@@ -11,6 +11,7 @@
         android:orientation="vertical"
         >
         <View
+            android:id="@+id/up_line"
             android:layout_width="2px"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -23,6 +24,7 @@
             android:layout_height="18dp"
             />
         <View
+            android:id="@+id/down_line"
             android:layout_width="2px"
             android:layout_height="0dp"
             android:background="@color/borde_gray"

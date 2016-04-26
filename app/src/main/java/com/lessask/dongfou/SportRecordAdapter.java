@@ -87,7 +87,10 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
                 return false;
             }
         });
-
+        if(position==getItemCount()-1)
+            holder.downLine.setVisibility(View.INVISIBLE);
+        else if(position==0)
+            holder.upLine.setVisibility(View.INVISIBLE);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder{
@@ -96,6 +99,8 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
         TextView detail;
         TextView time;
         CircleView circle;
+        View upLine;
+        View downLine;
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -104,6 +109,8 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
             detail=(TextView) itemView.findViewById(R.id.detail);
             time=(TextView)itemView.findViewById(R.id.time);
             circle = (CircleView) itemView.findViewById(R.id.circle);
+            upLine=itemView.findViewById(R.id.up_line);
+            downLine=itemView.findViewById(R.id.down_line);
         }
     }
 }

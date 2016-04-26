@@ -140,6 +140,32 @@ public class SportDbHelper {
         cr.close();
         return sportRecords;
     }
+
+    public List<SportRecord> loadTodaySportRecord(int userid){
+
+        SQLiteDatabase db = DbHelper.getInstance(context).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport_record where userid=" + userid + " and datetime(time,'unixepoch','localtime')>=datetime('now','start of day') and sportid not in (select id from t_sport where kind=3) order by time desc", null);
+        ArrayList<SportRecord> sportRecords=new ArrayList<>();
+        while (cr.moveToNext()){
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            sportRecords.add(sportRecord);
+        }
+        cr.close();
+        return sportRecords;
+    }
+    public SportRecord loadSportRecordById(int id){
+
+        SQLiteDatabase db = DbHelper.getInstance(context).getDb();
+        Cursor cr = db.rawQuery("select * from t_sport_record where id="+id, null);
+        SportRecord sportRecord = null;
+        while (cr.moveToNext()){
+            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
+            sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+        }
+        cr.close();
+        return sportRecord;
+    }
 }
 
 

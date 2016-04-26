@@ -46,7 +46,15 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:textColor="@color/black_35"
+                    android:textSize="16sp"
                     android:text="体重"
+                    />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black_35"
+                    android:textSize="16sp"
+                    android:text=": "
                     />
                 <TextView
                     android:id="@+id/weight"
@@ -58,11 +66,19 @@
                     android:text="131.5"
                     />
                 <TextView
-                    android:id="@+id/unit1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/black_35"
+                    android:textSize="16sp"
+                    android:text=" "
+                    />
+                <TextView
+                    android:id="@+id/weight_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:textColor="@color/black_35"
+                    android:textSize="16sp"
                     android:text="斤"
                     />
             </LinearLayout>

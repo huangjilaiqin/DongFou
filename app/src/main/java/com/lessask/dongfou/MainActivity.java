@@ -34,6 +34,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.NumberPicker;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -97,7 +98,6 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity implements OnChartValueSelectedListener {
 
     private XRecyclerView mRecyclerView;
-    //private RecyclerView mRecyclerView;
     private SportRecordAdapter mRecyclerViewAdapter;
 
     private FragmentDataPagerAdapter mFragmentDataPagerAdapter;
@@ -144,7 +144,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     //体重围度头部数据
     private LineChart mWeightChart;
     private AppCompatSpinner sportName1;
+    private TextView weightKind;
     private TextView weight;
+    private TextView weightUnit;
 
     private ArrayList<String> sportNameData;
     //private MySpinnerAdapter sportNameAdapter;
@@ -307,6 +309,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         mHeaderView = LayoutInflater.from(this).inflate(R.layout.data_header,mRecyclerView,false);
+        mRecyclerView.addHeaderView(mHeaderView);
         dataHeader = (RelativeLayout)mHeaderView.findViewById(R.id.data_header);
         weightDataHeader = (RelativeLayout)mHeaderView.findViewById(R.id.weight_header);
         mChart=(BarChart)mHeaderView.findViewById(R.id.chart);
@@ -316,7 +319,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         targeProgressBar1=(ProgressBar)mHeaderView.findViewById(R.id.target);
         //targeProgressBar1.setProgress(30);
         //View footView = LayoutInflater.from(thi.inflate(R.layout.data_foot,mRecyclerView,false);
-        mRecyclerView.addHeaderView(mHeaderView);
 
         initChart();
         mChart.setOnChartValueSelectedListener(this);
@@ -324,6 +326,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightChart=(LineChart)mHeaderView.findViewById(R.id.weight_chart);
         sportName1=(AppCompatSpinner)mHeaderView.findViewById(R.id.sport_name1);
         weight=(TextView)mHeaderView.findViewById(R.id.weight);
+        weightKind = (TextView)mHeaderView.findViewById(R.id.weight_kind);
+        weightUnit=(TextView)mHeaderView.findViewById(R.id.weight_unit);
         mWeightRecyclerView = (RecyclerView) mHeaderView.findViewById(R.id.weight_list);
         //用线性的方式显示listview
         LinearLayoutManager mLinearLayoutManager = new LinearLayoutManager(this);
@@ -333,6 +337,10 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         mWeightAdapter = new WeightAdapter(this);
         mWeightRecyclerView.setAdapter(mWeightAdapter);
+
+        //尾部
+        View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
+        mRecyclerView.addFooterView(footView);
 
         mWeightAdapter.setOnItemClickListener(new OnItemClickListener() {
             @Override
@@ -360,9 +368,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         checkVersionUpdate();
 
         //加载运动列表为空, 可能是globalInfo中的userid获取不到了
-        loadDatas();
-
-
+        loadSportDatas();
         setChartData(sportGathers.get(0));
 
 
@@ -391,7 +397,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
         mRecyclerViewAdapter.setOnItemLongClickListener(onRecordLondClickListener);
-        List<SportRecord> sportRecords = loadSportRecord();
+        List<SportRecord> sportRecords = sportDbHelper.loadTodaySportRecord(globalInfo.getUserid());
         mRecyclerViewAdapter.clear();
         mRecyclerViewAdapter.appendToList(sportRecords);
         mRecyclerViewAdapter.notifyDataSetChanged();
@@ -458,7 +464,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     private void reloadData(){
         //加载运动列表为空, 可能是globalInfo中的userid获取不到了
         sportGathers.clear();
-        loadDatas();
+        loadSportDatas();
 
         for(int i=0;i<fragmentDatas.size();i++) {
             FragmentData fragmentData = (FragmentData)fragmentDatas.get(i);
@@ -472,8 +478,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mRecyclerViewAdapter.setSportMap(sportMap);
 
         //更新当天运动记录列表
-        loadSportRecord();
-        List<SportRecord> sportRecords = loadSportRecord();
+        sportDbHelper.loadTodaySportRecord(globalInfo.getUserid());
+        List<SportRecord> sportRecords = sportDbHelper.loadTodaySportRecord(globalInfo.getUserid());
         mRecyclerViewAdapter.clear();
         mRecyclerViewAdapter.appendToList(sportRecords);
         mRecyclerViewAdapter.notifyDataSetChanged();
@@ -602,7 +608,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             public Map getPostData() {
                 Map datas = new HashMap();
                 SportRecord record = mRecyclerViewAdapter.getItem(deletePostion);
-                record = loadOneSportRecordById(record.getId());
+                record = sportDbHelper.loadSportRecordById(record.getId());
                 datas.put("token", globalInfo.getToken()+"");
                 datas.put("userid", globalInfo.getUserid()+"");
                 datas.put("id", record.getId() + "");
@@ -656,6 +662,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
     private void showDataDialog(final Sport sport){
         float lastV,lastV2;
+
         switch (sport.getKind()) {
             case 1:
                 lastV = sport.getLastValue();
@@ -667,7 +674,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                         addSportRecord(sport.getId(), data, 0);
                     }
                 });
-                stringPickerDialog.setEditable(false);
+                //stringPickerDialog.setEditable(false);
                 stringPickerDialog.show();
                 break;
             case 2:
@@ -684,7 +691,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                         addSportRecord(sport.getId(), data, data2);
                     }
                 });
-                stringPickerTwoDialog.setEditable(false);
+                //stringPickerTwoDialog.setEditable(false);
                 stringPickerTwoDialog.show();
                 break;
         }
@@ -745,61 +752,102 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             SportRecord sportRecord = (SportRecord) obj;
             //查询上一次的更新时间
             Sport sport = loadSport(sportRecord.getSportid());
-            boolean isSameDay = true;
-            boolean isSameMonth = true;
-            if(sport.getLastTime().equals(new Date(0))){
-                isSameDay=false;
-                isSameMonth=false;
+            if(sport.getKind()!=3) {
+                boolean isSameDay = true;
+                boolean isSameMonth = true;
+                if (sport.getLastTime().equals(new Date(0))) {
+                    isSameDay = false;
+                    isSameMonth = false;
+                }
+
+                if (!TimeHelper.isSameDay(sport.getLastTime(), sportRecord.getTime())) {
+                    sport.setDays(sport.getDays() + 1);
+                    isSameDay = false;
+                }
+                if (!TimeHelper.isSameMonth(sport.getLastTime(), sportRecord.getTime()))
+                    isSameMonth = false;
+
+                sport.setLastTime(sportRecord.getTime());
+
+                sport.setFrequency(sport.getFrequency() + 1);
+                sport.setTotal(sport.getTotal() + sportRecord.getAmount());
+                sport.setSeq(sportRecord.getSeq());
+                sport.setLastValue(sportRecord.getArg1());
+                sport.setLastValue2(sportRecord.getArg2());
+                //日均
+                sport.setAvg(sport.getTotal() / sport.getDays());
+                Log.e(TAG, "insert record callback,updat sport");
+                ContentValues values = new ContentValues();
+                values.put("total", sport.getTotal());
+                values.put("frequency", sport.getFrequency());
+                values.put("avg", sport.getAvg());
+                values.put("days", sport.getDays());
+                values.put("lasttime", sport.getLastTime().getTime() / 1000);
+                values.put("seq", sport.getSeq());
+                values.put("lastvalue", sport.getLastValue());
+                values.put("lastvalue2", sport.getLastValue2());
+                DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values, "id=? and userid=?", new String[]{sport.getId() + "", "" + globalInfo.getUserid()});
+
+                if (isSameDay) {
+                    updateSportDay(sportRecord);
+                } else {
+                    insertSportDay(sportRecord);
+                }
+                if (isSameMonth) {
+                    updateSportMonth(sportRecord);
+                } else {
+                    insertSportMonth(sportRecord);
+                }
+
+                mRecyclerViewAdapter.appendToTop(sportRecord);
+                mRecyclerViewAdapter.notifyDataSetChanged();
+
+                Message message = new Message();
+                message.what = ADD_SPORT;
+                message.obj = sportRecord;
+                handler.sendMessage(message);
+            }else if(sport.getKind()==3){
+                boolean isSameDay = true;
+                if (sport.getLastTime().equals(new Date(0))) {
+                    isSameDay = false;
+                }
+
+                if (!TimeHelper.isSameDay(sport.getLastTime(), sportRecord.getTime())) {
+                    sport.setDays(sport.getDays() + 1);
+                    isSameDay = false;
+                }
+
+                sport.setLastTime(sportRecord.getTime());
+
+                sport.setFrequency(sport.getFrequency() + 1);
+                sport.setTotal(sport.getTotal() + sportRecord.getAmount());
+                sport.setSeq(sportRecord.getSeq());
+                sport.setLastValue(sportRecord.getArg1());
+                //日均
+                sport.setAvg(sport.getTotal() / sport.getDays());
+                ContentValues values = new ContentValues();
+                values.put("total", sport.getTotal());
+                values.put("frequency", sport.getFrequency());
+                values.put("avg", sport.getAvg());
+                values.put("days", sport.getDays());
+                values.put("lasttime", sport.getLastTime().getTime() / 1000);
+                values.put("seq", sport.getSeq());
+                values.put("lastvalue", sport.getLastValue());
+                DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values, "id=? and userid=?", new String[]{sport.getId() + "", "" + globalInfo.getUserid()});
+
+                if (isSameDay) {
+                    updateSportDay(sportRecord);
+                } else {
+                    insertSportDay(sportRecord);
+                }
+
+                Message message = new Message();
+                message.what = ADD_SPORT;
+                message.obj = sportRecord;
+                handler.sendMessage(message);
             }
 
-            if(!TimeHelper.isSameDay(sport.getLastTime(),sportRecord.getTime())) {
-                sport.setDays(sport.getDays() + 1);
-                isSameDay=false;
-            }
-            if(!TimeHelper.isSameMonth(sport.getLastTime(),sportRecord.getTime()))
-                isSameMonth=false;
-
-            sport.setLastTime(sportRecord.getTime());
-
-            sport.setFrequency(sport.getFrequency()+1);
-            sport.setTotal(sport.getTotal()+sportRecord.getAmount());
-            sport.setSeq(sportRecord.getSeq());
-            sport.setLastValue(sportRecord.getArg1());
-            sport.setLastValue2(sportRecord.getArg2());
-            //日均
-            sport.setAvg(sport.getTotal()/sport.getDays());
-            Log.e(TAG, "insert record callback,updat sport");
-            ContentValues values = new ContentValues();
-            values.put("total", sport.getTotal());
-            values.put("frequency", sport.getFrequency());
-            values.put("avg", sport.getAvg());
-            values.put("days", sport.getDays());
-            values.put("lasttime", sport.getLastTime().getTime()/1000);
-            values.put("seq", sport.getSeq());
-            values.put("lastvalue", sport.getLastValue());
-            values.put("lastvalue2", sport.getLastValue2());
-            DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values,"id=? and userid=?",new String[]{sport.getId()+"",""+globalInfo.getUserid()});
-
-            if(isSameDay){
-                updateSportDay(sportRecord);
-            }else {
-                insertSportDay(sportRecord);
-            }
-            if(isSameMonth){
-                updateSportMonth(sportRecord);
-            }else {
-                insertSportMonth(sportRecord);
-            }
-
-            mRecyclerViewAdapter.appendToTop(sportRecord);
-            mRecyclerViewAdapter.notifyDataSetChanged();
-
-            Message message = new Message();
-            message.what=ADD_SPORT;
-            message.obj = sportRecord;
-            handler.sendMessage(message);
-
-            if(globalInfo.getUserid()!=0)
+            if (globalInfo.getUserid() != 0)
                 uploadRecord(0);
 
         }
@@ -1044,26 +1092,26 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     }
 
     private SportGather loadSportGatherFromDb(int sportid){
-        return new SportGather(loadSportFromDb(sportid),loadSportRecordById(sportid));
+        return new SportGather(loadSportFromDb(sportid),loadTodaySportRecordById(sportid));
     }
 
-    private void loadDatas(){
+    private void loadSportDatas(){
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
 
         //id int primary key,name text not null,image text not null,type int not null,unit text not null,unit2 text null,int maxnum not null,frequency int not null default 0)");
-        Cursor cr = db.rawQuery("select * from t_sport where userid="+globalInfo.getUserid()+" order by lasttime desc,id limit 5", null);
+        Cursor cr = db.rawQuery("select * from t_sport where userid="+globalInfo.getUserid()+" and kind!=3 order by lasttime desc,id limit 5", null);
         while (cr.moveToNext()){
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
             sportMap.put(sport.getId(), sport);
-            sportGathers.add(new SportGather(sport, loadSportRecordById(sport.getId())));
+            sportGathers.add(new SportGather(sport, loadTodaySportRecordById(sport.getId())));
             Log.e(TAG, "load sportid:"+sport.getId()+", " + sport.getName()+", "+sport.getTotal());
         }
         cr.close();
     }
 
     //过去7天数据汇总
-    private List<SportRecord> loadSportRecordById(int sportid){
+    private List<SportRecord> loadTodaySportRecordById(int sportid){
 
         List<SportRecord> records = new ArrayList<>();
         SQLiteDatabase db = DbHelper.getInstance(this).getDb();
@@ -1129,33 +1177,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         return records;
     }
 
-    private List<SportRecord> loadSportRecord(){
 
-        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Log.e(TAG, "select * from t_sport_record where userid="+globalInfo.getUserid()+" and datetime(time)>=datetime('now') order by time desc");
-        Cursor cr = db.rawQuery("select * from t_sport_record where userid=" + globalInfo.getUserid() + " and datetime(time)>=datetime('now') order by time desc", null);
-        ArrayList<SportRecord> sportRecords=new ArrayList<>();
-        while (cr.moveToNext()){
-            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
-            sportRecords.add(sportRecord);
-        }
-        cr.close();
-        return sportRecords;
-    }
-
-    private SportRecord loadOneSportRecordById(int id){
-
-        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport_record where id="+id, null);
-        SportRecord sportRecord = null;
-        while (cr.moveToNext()){
-            //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
-            sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
-        }
-        cr.close();
-        return sportRecord;
-    }
 
     private DbInsertListener chatRecorInsertListener = new DbInsertListener() {
         @Override
@@ -1716,26 +1738,18 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         //头部点击出现数值
         //mChart.setMarkerView(new MyMarkerView(MainActivity.this,R.layout.my_mark_view));
 
-        // if more than 60 entries are displayed in the chart, no values will be
-        // drawn
-        mChart.setMaxVisibleValueCount(60);
-
-        // scaling can now only be done on x- and y-axis separately
         mChart.setPinchZoom(false);
 
         mChart.setDrawGridBackground(false);
         mChart.setScaleEnabled(false);
-        //mChart.setTouchEnabled(false);
         mChart.setDescription("");
 
         mChart.getAxisRight().setEnabled(false);
         mChart.getAxisLeft().setDrawGridLines(false);
         mChart.getAxisLeft().setEnabled(false);
-        //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
 
         XAxis xAxis = mChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        //xAxis.setTypeface(mTf);
         xAxis.setDrawGridLines(false);
         xAxis.setSpaceBetweenLabels(2);
 
@@ -1747,7 +1761,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         };
 
         YAxis leftAxis = mChart.getAxisLeft();
-        //leftAxis.setTypeface(mTf);
         leftAxis.setLabelCount(8, false);
         leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
@@ -1755,67 +1768,22 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
 
 
-
-        YAxis rightAxis = mChart.getAxisRight();
-        rightAxis.setDrawGridLines(false);
-        //rightAxis.setTypeface(mTf);
-        rightAxis.setLabelCount(8, false);
-        rightAxis.setValueFormatter(custom);
-        rightAxis.setSpaceTop(15f);
-        rightAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
-
         //对每种颜色的柱状图说明
         mChart.getLegend().setEnabled(false);
     }
 
-    private void initWeightChart(){
-
-        mWeightChart.getXAxis().setDrawGridLines(false);
-
-        mWeightChart.setPinchZoom(false);
-
-        mWeightChart.setDrawGridBackground(false);
-        mWeightChart.setScaleEnabled(false);
-        //mChart.setTouchEnabled(false);
-        mWeightChart.setDescription("");
-
-        mWeightChart.getAxisRight().setEnabled(false);
-        //mWeightChart.getAxisLeft().setDrawGridLines(false);
-        //mWeightChart.getAxisLeft().setEnabled(false);
-        //mTf = Typeface.createFromAsset(getContext().getAssets(), "OpenSans-Regular.ttf");
-
-        XAxis xAxis = mWeightChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        //xAxis.setTypeface(mTf);
-        //xAxis.setDrawGridLines(false);
-        xAxis.setSpaceBetweenLabels(2);
-
-        YAxisValueFormatter custom = new YAxisValueFormatter() {
-            @Override
-            public String getFormattedValue(float value, YAxis yAxis) {
-                return ""+value;
-            }
-        };
-
-        YAxis leftAxis = mWeightChart.getAxisLeft();
-        leftAxis.setLabelCount(8, false);
-        leftAxis.setValueFormatter(custom);
-        leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-        leftAxis.setSpaceTop(15f);
-        //leftAxis.setAxisMaxValue(70f);
-        //leftAxis.setAxisMinValue(40f); // this replaces setStartAtZero(true)
-
-        //对每种颜色的柱状图说明
-        //mChart.getLegend().setEnabled(false);
-    }
     private void setChartData(SportGather sportGather) {
         Sport sport = sportGather.getSport();
-        if(sport.getKind()==1)
+        String totalStr="XX";
+        if(sport.getKind()==1) {
             unit.setText(sport.getUnit());
-        else if(sport.getKind()==2)
+            totalStr = new DecimalFormat("0").format(sport.getTotal());
+        }else if(sport.getKind()==2) {
             unit.setText(sport.getUnit2());
+            totalStr = new DecimalFormat("0.0").format(sport.getTotal());
+        }
 
-        total.setText(new DecimalFormat("0.0").format(sport.getTotal()));
+        total.setText(totalStr);
 
         List<SportRecord> sportRecords = sportGather.getSportRecords();
 
@@ -1835,13 +1803,14 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         BarDataSet set1 = new BarDataSet(yVals1, "DataSet");
         //设置显示数值
         //set1.setDrawValues(false);
-        set1.setHighlightEnabled(false);
+        //set1.setHighlightEnabled(false);
         //set1.setHighLightAlpha(100);
         //set1.setHighLightColor();
 
-        set1.setLabel("");
+        //set1.setLabel("");
         set1.setColor(getResources().getColor(R.color.colorAccent1));
-        set1.setBarSpacePercent(5f);
+        set1.setBarSpacePercent(35f);
+        set1.setHighlightEnabled(false);
 
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
         dataSets.add(set1);
@@ -1871,16 +1840,50 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mChart.animateY(1000);
         mChart.invalidate();
     }
-    private void setWeightChartData(Sport sport) {
-        //加载体重数据
-        //设置体重数据
 
-        weight.setText("129.3");
+    private void initWeightChart(){
 
-        //加载体重、围度记录
-        List<SportRecord> records = sportDbHelper.loadWeightRecordById(globalInfo.getUserid(),sport.getId());
-        //如果没有数据的时候
+        mWeightChart.getXAxis().setDrawGridLines(false);
 
+        mWeightChart.setPinchZoom(false);
+
+        mWeightChart.setDrawGridBackground(false);
+        mWeightChart.setScaleEnabled(false);
+        mWeightChart.setDescription("");
+
+        //mWeightChart.setMaxVisibleValueCount(2);
+        mWeightChart.setVisibleXRangeMaximum(3);
+        mWeightChart.setVisibleXRangeMinimum(3);
+
+        mWeightChart.getAxisRight().setEnabled(false);
+        mWeightChart.setMarkerView(new MyMarkerView(MainActivity.this, R.layout.my_mark_view));
+
+        XAxis xAxis = mWeightChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        //xAxis.setDrawGridLines(false);
+        xAxis.setSpaceBetweenLabels(2);
+
+        YAxisValueFormatter custom = new YAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float value, YAxis yAxis) {
+                return ""+value;
+            }
+        };
+
+        YAxis leftAxis = mWeightChart.getAxisLeft();
+        //设置左边坐标个数， 如果画线将影响横线的条数
+        //leftAxis.setLabelCount(3, false);
+        leftAxis.setValueFormatter(custom);
+        leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        leftAxis.setSpaceTop(15f);
+        //左边轴数值距离表格宽度
+        //leftAxis.setXOffset(10);
+
+        //对每种颜色的柱状图说明
+        mWeightChart.getLegend().setEnabled(false);
+    }
+
+    private void setAllWeightChartData(){
         /* 同时显示全部维度数据
         Map<Integer,List> everyRecords = new HashMap<>();
         for(int i=0;i<records.size();i++){
@@ -1942,6 +1945,18 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             pos++;
         }
         */
+    }
+
+    private void setWeightChartData(Sport sport) {
+        //加载体重数据
+        //设置体重数据
+        weightKind.setText(sport.getName());
+        weightUnit.setText(sport.getUnit());
+        weight.setText("0");
+
+        //加载体重、围度记录
+        List<SportRecord> records = sportDbHelper.loadWeightRecordById(globalInfo.getUserid(),sport.getId());
+        //如果没有数据的时候
 
         Date minTime;
         Date maxTime;
@@ -1951,6 +1966,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         }else
             minTime=maxTime=null;
 
+        /*
         ArrayList<String> xVals = new ArrayList<String>();
         Map<Long,Integer> time2pos = new HashMap<>();
         int pos=0;
@@ -1963,17 +1979,20 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             timeNum+=86400000;
             pos++;
         }
+        */
 
         //int[] colors = new int[]{0xFF0000,0xFFA500,0xFFFF00,0x008000,0x0000FF,0x4B0082,0x800880};
         int[] colors = new int[]{Color.rgb(255,0,0),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
 
         ArrayList<Entry> yVal = new ArrayList<Entry>();
         //各种类型的参考线
-        pos=0;
+        //pos=0;
         float maxNum=0,minNum=0;
+        ArrayList<String> xVals = new ArrayList<String>();
         for (int i=0;i<records.size();i++){
             SportRecord record = records.get(i);
             float amount = record.getAmount();
+            Log.e(TAG, "amount:"+amount);
             if(maxNum==0 || minNum==0)
                 minNum=maxNum=amount;
             if(amount>maxNum)
@@ -1981,16 +2000,23 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             if(amount<minNum)
                 minNum=amount;
 
-            timeNum = TimeHelper.getDateStartOfDay(record.getTime()).getTime();
-            int index = time2pos.get(timeNum);
-            yVal.add(new Entry(records.get(i).getAmount(),index));
+            long timeNum = TimeHelper.getDateStartOfDay(record.getTime()).getTime();
+            xVals.add(TimeHelper.dateFormat(new Date(timeNum), "M/d"));
+            //int index = time2pos.get(timeNum);
+            yVal.add(new Entry(records.get(i).getAmount(),i));
         }
-        float line = records.get(records.size()-1).getAmount();
+        float lastValue = records.get(records.size()-1).getAmount();
+        weight.setText(lastValue+"");
+
+        float line = lastValue;
 
         YAxis leftAxis = mWeightChart.getAxisLeft();
         leftAxis.removeAllLimitLines();
-        leftAxis.setAxisMaxValue(maxNum*1.2f);
-        leftAxis.setAxisMinValue(minNum*1.2f); // this replaces setStartAtZero(true)
+        int maxNumInt = (int)(maxNum*1.2f);
+        int minNumInt = (int)(minNum*0.8f);
+        leftAxis.setAxisMaxValue(maxNumInt);
+        leftAxis.setAxisMinValue(minNumInt); // this replaces setStartAtZero(true)
+        Log.e(TAG, "min:"+minNumInt+", max:"+maxNumInt);
 
         if (mWeightChart.getData() != null && mWeightChart.getData().getDataSetCount() > 0) {
             LineDataSet set = (LineDataSet) mWeightChart.getData().getDataSetByIndex(0);
@@ -2005,25 +2031,20 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             //set.setDrawCircles(false);
             set.setDrawValues(false);
+            set.setLabel("");
 
             set.setAxisDependency(YAxis.AxisDependency.LEFT);
             //set.setColor(ColorTemplate.getHoloBlue());
             set.setColor(colors[0]);
             set.setCircleColor(colors[0]);
-            set.setLineWidth(2f);
+            set.setLineWidth(3f);
             set.setCircleRadius(3f);
             //set.setFillAlpha(65);
             //set.setFillColor(ColorTemplate.getHoloBlue());
             //set.setHighLightColor(Color.rgb(244, 117, 117));
             //set.setDrawCircleHole(false);
-            set.setHighlightEnabled(false);
-
-
 
             dataSets.add(set); // add the datasets
-
-            // create a dataset and give it a type
-
 
             LineData data = new LineData(xVals, dataSets);
             data.setValueTextColor(Color.WHITE);
@@ -2035,104 +2056,16 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         LimitLine ll = new LimitLine(line, "");
         ll.setLineColor(colors[0]);
         ll.setLineWidth(1f);
-        ll.enableDashedLine(5,5,0);
+        ll.enableDashedLine(5, 5, 0);
         ll.setTextStyle(Paint.Style.STROKE);
         ll.setTextColor(Color.GRAY);
         ll.setTextSize(12f);
         // .. and more styling options
         leftAxis.addLimitLine(ll);
 
-
-        /*
-        //ArrayList<String> xVals = new ArrayList<String>();
-
-        for (int i = 0; i < 35; i++) {
-            xVals.add(i+"");
-        }
-        ArrayList<Entry> yVals1 = new ArrayList<Entry>();
-        ArrayList<Entry> yVals2 = new ArrayList<Entry>();
-        ArrayList<Entry> yVals3 = new ArrayList<Entry>();
-        for (int i = 15; i < 25; i++) {
-            float mult = 50;
-            float val = (float) (Math.random() * mult) + 50;// + (float)
-            yVals1.add(new Entry(val, i));
-        }
-        for (int i = 0; i < 32; ) {
-            float mult = 50;
-            float val = (float) (Math.random() * mult) + 50;// + (float)
-            yVals2.add(new Entry(val, i));
-            i+=2;
-        }
-        for (int i = 5; i < 25; i++) {
-            float mult = 50;
-            float val = (float) (Math.random() * mult) + 50;// + (float)
-            yVals3.add(new Entry(val, i));
-            i+=3;
-        }
-
-        LineDataSet set1, set2;
-
-        if (mWeightChart.getData() != null && mWeightChart.getData().getDataSetCount() > 0) {
-            set1 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(0);
-            set2 = (LineDataSet) mWeightChart.getData().getDataSetByIndex(1);
-            set1.setYVals(yVals1);
-            set2.setYVals(yVals2);
-            mWeightChart.getData().setXVals(xVals);
-            mWeightChart.notifyDataSetChanged();
-        } else {
-            // create a dataset and give it a type
-            set1 = new LineDataSet(yVals1, "体重");
-            set1.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            set1.setDrawCircles(false);
-            set1.setDrawValues(false);
-
-            set1.setAxisDependency(YAxis.AxisDependency.LEFT);
-            set1.setColor(ColorTemplate.getHoloBlue());
-            set1.setCircleColor(Color.WHITE);
-            set1.setLineWidth(2f);
-            set1.setCircleRadius(3f);
-            set1.setFillAlpha(65);
-            set1.setFillColor(ColorTemplate.getHoloBlue());
-            set1.setHighLightColor(Color.rgb(244, 117, 117));
-            set1.setDrawCircleHole(false);
-            //set1.setFillFormatter(new MyFillFormatter(0f));
-            //set1.setDrawHorizontalHighlightIndicator(false);
-            //set1.setVisible(false);
-            //set1.setCircleHoleColor(Color.WHITE);
-
-            // create a dataset and give it a type
-            set2 = new LineDataSet(yVals2, "腰围");
-            set2.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            set2.setDrawCircles(false);
-            set2.setDrawValues(false);
-
-            set2.setAxisDependency(YAxis.AxisDependency.RIGHT);
-            set2.setColor(Color.RED);
-            set2.setCircleColor(Color.WHITE);
-            set2.setLineWidth(2f);
-            set2.setCircleRadius(3f);
-            set2.setFillAlpha(65);
-            set2.setFillColor(Color.RED);
-            set2.setDrawCircleHole(false);
-            set2.setHighLightColor(Color.rgb(244, 117, 117));
-            //set2.setFillFormatter(new MyFillFormatter(900f));
-
-            ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
-            dataSets.add(set2);
-            dataSets.add(set1); // add the datasets
-
-            // create a data object with the datasets
-            LineData data = new LineData(xVals, dataSets);
-            data.setValueTextColor(Color.WHITE);
-            data.setValueTextSize(9f);
-
-            // set data
-            mWeightChart.setData(data);
-        }
-        set1.setHighlightEnabled(false);
-        set2.setHighlightEnabled(false);
-        */
-
+        mWeightChart.setVisibleXRangeMaximum(30);
+        mWeightChart.moveViewToX(records.size());
+        //mWeightChart.setVisibleXRangeMinimum(20);
         mWeightChart.invalidate();
     }
 

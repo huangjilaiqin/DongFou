@@ -4,13 +4,17 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.ColorDrawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowInsets;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
+import com.lessask.dongfou.LoginRegisterActivity;
 import com.lessask.dongfou.R;
 
+import java.awt.font.TextAttribute;
 import java.util.ArrayList;
 
 /**
@@ -24,6 +28,8 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
     private String[] values;
     private float initValue;
     private String unit;
+    private int currentValue;
+    private String TAG = StringPickerDialog.class.getSimpleName();
 
 
     /*
@@ -56,10 +62,15 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue((int)(initValue-1));
+        numberPicker.setValue((int) (initValue - 1));
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
-
-
+        numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                Log.e(TAG, "old:" + oldVal + ", new:" + newVal);
+                currentValue = newVal;
+            }
+        });
     }
     public StringPickerDialog(Context context,String title,int maxNumber,float initValue,String unit,OnSelectListener mSelectCallBack) {
         super(context);
@@ -70,6 +81,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         this.title = title;
         this.unit = unit;
         this.initValue=initValue;
+        currentValue = (int)initValue;
         this.mSelectCallBack = mSelectCallBack;
         init(context);
     }
@@ -80,7 +92,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         switch (which) {
             case BUTTON_POSITIVE:
                 if (mSelectCallBack != null) {
-                    mSelectCallBack.onSelect(numberPicker.getValue()+1);
+                    mSelectCallBack.onSelect(Integer.parseInt(values[currentValue]));
                 }
                 break;
             case BUTTON_NEGATIVE:
