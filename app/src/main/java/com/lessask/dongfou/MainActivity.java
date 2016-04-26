@@ -65,6 +65,7 @@ import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.github.mikephil.charting.utils.Utils;
 import com.google.gson.reflect.TypeToken;
 import com.lessask.dongfou.dialog.LoadingDialog;
 import com.lessask.dongfou.dialog.MenuDialog;
@@ -1025,7 +1026,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         //自1970年后的秒数
         long time=TimeHelper.getDateStartOfDay(record.getTime()).getTime() / 1000;
         values.put("time", time);
-        values.put("userid", ""+globalInfo.getUserid());
+        values.put("userid", "" + globalInfo.getUserid());
         DbHelper.getInstance(this).insert("t_sport_record_day", null, values);
     }
     private void updateSportDay(SportRecord record){
@@ -1105,7 +1106,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
             sportMap.put(sport.getId(), sport);
             sportGathers.add(new SportGather(sport, loadTodaySportRecordById(sport.getId())));
-            Log.e(TAG, "load sportid:"+sport.getId()+", " + sport.getName()+", "+sport.getTotal());
+            Log.e(TAG, "load sportid:" + sport.getId() + ", " + sport.getName() + ", " + sport.getTotal());
         }
         cr.close();
     }
@@ -1881,6 +1882,21 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         //对每种颜色的柱状图说明
         mWeightChart.getLegend().setEnabled(false);
+        //mWeightChart.setNoDataTextDescription("没有数据");
+        mWeightChart.setDescriptionColor(R.color.black_35);
+        mWeightChart.setDescriptionTextSize(18);
+
+        /*
+        Paint mInfoPaint = new Paint();
+        mInfoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mInfoPaint.setColor(Color.rgb(0, 0, 0)); // orange
+        mInfoPaint.setTextAlign(Paint.Align.CENTER);
+        mInfoPaint.setTextSize(Utils.convertDpToPixel(16f));
+        mWeightChart.setPaint(mInfoPaint,LineChart.PAINT_DESCRIPTION);
+        */
+
+        mWeightChart.setNoDataTextDescription("没有数据，长按添加记录");
+
     }
 
     private void setAllWeightChartData(){
@@ -1954,9 +1970,51 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         weightUnit.setText(sport.getUnit());
         weight.setText("0");
 
+        int[] colors = new int[]{Color.rgb(255,0,0),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
         //加载体重、围度记录
         List<SportRecord> records = sportDbHelper.loadWeightRecordById(globalInfo.getUserid(),sport.getId());
         //如果没有数据的时候
+        if(records.size()==0) {
+            /*
+            ArrayList<Entry> yVal = new ArrayList<Entry>();
+            ArrayList<String> xVals = new ArrayList<String>();
+
+            YAxis leftAxis = mWeightChart.getAxisLeft();
+            leftAxis.removeAllLimitLines();
+
+            ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
+
+            LineDataSet set = new LineDataSet(yVal, sport.getName());
+            //赛贝斯曲线
+            set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            //set.setDrawCircles(false);
+            set.setDrawValues(false);
+            set.setLabel("");
+
+            set.setAxisDependency(YAxis.AxisDependency.LEFT);
+            set.setColor(colors[0]);
+            set.setCircleColor(colors[0]);
+            set.setLineWidth(3f);
+            set.setCircleRadius(3f);
+
+            dataSets.add(set); // add the datasets
+
+            LineData data = new LineData(xVals, dataSets);
+            data.setValueTextColor(Color.WHITE);
+            data.setValueTextSize(9f);
+            */
+
+            // set data
+            mWeightChart.clear();
+            mWeightChart.setData(null);
+
+            //mWeightChart.setVisibleXRangeMaximum(30);
+            //mWeightChart.moveViewToX(records.size());
+            //mWeightChart.setVisibleXRangeMinimum(20);
+            mWeightChart.invalidate();
+
+            return;
+        }
 
         Date minTime;
         Date maxTime;
@@ -1982,7 +2040,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         */
 
         //int[] colors = new int[]{0xFF0000,0xFFA500,0xFFFF00,0x008000,0x0000FF,0x4B0082,0x800880};
-        int[] colors = new int[]{Color.rgb(255,0,0),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
 
         ArrayList<Entry> yVal = new ArrayList<Entry>();
         //各种类型的参考线

@@ -176,6 +176,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/header_data"
+                    android:visibility="gone"
                     >
                     <ProgressBar
                         android:id="@+id/target"
