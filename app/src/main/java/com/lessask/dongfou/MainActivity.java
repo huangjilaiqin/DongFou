@@ -90,12 +90,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements OnChartValueSelectedListener {
 
@@ -940,6 +936,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
 
     private void updateHeader(SportRecord sportRecord){
+        Sport sport = loadSport(sportRecord.getSportid());
+        if(sport.getKind()==3)
+            return;
         int i=0;
         for (;i<sportGathers.size();i++){
             SportGather sportGather = sportGathers.get(i);
@@ -959,7 +958,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         //更新下拉菜单
         sportNameData.clear();
         for(i=0;i<sportGathers.size();i++){
-            Sport sport = sportGathers.get(i).getSport();
+            sport = sportGathers.get(i).getSport();
             sportNameData.add(sport.getName());
         }
         sportNameData.add("体重/围度");
@@ -1886,7 +1885,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         YAxis leftAxis = mWeightChart.getAxisLeft();
         //设置左边坐标个数， 如果画线将影响横线的条数
-        //leftAxis.setLabelCount(3, false);
+        leftAxis.setLabelCount(3, false);
         leftAxis.setValueFormatter(custom);
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         leftAxis.setSpaceTop(15f);
