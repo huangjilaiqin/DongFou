@@ -72,6 +72,7 @@ import com.lessask.dongfou.dialog.MenuDialog;
 import com.lessask.dongfou.dialog.OnSelectMenu;
 import com.lessask.dongfou.dialog.StringPickerDialog;
 import com.lessask.dongfou.dialog.StringPickerTwoDialog;
+import com.lessask.dongfou.dialog.WeightPickerDialog;
 import com.lessask.dongfou.model.Version;
 import com.lessask.dongfou.net.GsonRequest;
 import com.lessask.dongfou.net.VolleyHelper;
@@ -340,7 +341,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightRecyclerView.setAdapter(mWeightAdapter);
 
         //尾部
-        View footView = LayoutInflater.from(this).inflate(R.layout.data_foot,mRecyclerView,false);
+        View footView = LayoutInflater.from(this).inflate(R.layout.data_foot, mRecyclerView, false);
         mRecyclerView.addFooterView(footView);
 
         mWeightAdapter.setOnItemClickListener(new OnItemClickListener() {
@@ -348,14 +349,20 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             public void onItemClick(View view, final int position) {
                 Sport sport = mWeightAdapter.getItem(position);
                 //Toast.makeText(SportsActivity.this, sport.getName(), Toast.LENGTH_SHORT).show();
-                showDataDialog(sport);
+                mWeightAdapter.updateStatus(sport.getId());
+                mWeightAdapter.notifyDataSetChanged();
                 setWeightChartData(sport);
             }
 
         });
-        ArrayList<Sport> weights = sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
-        mWeightAdapter.appendToList(weights);
-        mWeightAdapter.notifyDataSetChanged();
+        mWeightAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
+            @Override
+            public void onItemLongClick(View view, int position) {
+                Sport sport = mWeightAdapter.getItem(position);
+                showWeightDialog(sport);
+            }
+        });
+
 
         initWeightChart();
         weightDataHeader.setVisibility(View.GONE);
@@ -444,8 +451,12 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             }
             if(position+1==sportNameData.size()){
                 //体重数据设置
-                if(weights==null)
-                    weights=sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
+                if(weights==null) {
+                    weights = sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
+                    weights.get(0).setStatus(1);
+                    mWeightAdapter.appendToList(weights);
+                    mWeightAdapter.notifyDataSetChanged();
+                }
                 setWeightChartData(weights.get(0));
             }else {
                 //运动数据设置
@@ -833,6 +844,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 values.put("days", sport.getDays());
                 values.put("lasttime", sport.getLastTime().getTime() / 1000);
                 values.put("seq", sport.getSeq());
+                Log.e(TAG, "update lastValue"+sport.getLastValue());
                 values.put("lastvalue", sport.getLastValue());
                 DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values, "id=? and userid=?", new String[]{sport.getId() + "", "" + globalInfo.getUserid()});
 
@@ -846,6 +858,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 message.what = ADD_SPORT;
                 message.obj = sportRecord;
                 handler.sendMessage(message);
+                setWeightChartData(sport);
             }
 
             if (globalInfo.getUserid() != 0)
@@ -1085,7 +1098,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
         while (cr.moveToNext()) {
             sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
-                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getFloat(14), cr.getFloat(15));
         }
         sportMap.put(sport.getId(),sport);
         cr.close();
@@ -1103,7 +1116,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         Cursor cr = db.rawQuery("select * from t_sport where userid="+globalInfo.getUserid()+" and kind!=3 order by lasttime desc,id limit 5", null);
         while (cr.moveToNext()){
             Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
-            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getInt(14),cr.getInt(15));
+            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getFloat(14),cr.getFloat(15));
             sportMap.put(sport.getId(), sport);
             sportGathers.add(new SportGather(sport, loadTodaySportRecordById(sport.getId())));
             Log.e(TAG, "load sportid:" + sport.getId() + ", " + sport.getName() + ", " + sport.getTotal());
@@ -1894,7 +1907,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mInfoPaint.setTextSize(Utils.convertDpToPixel(16f));
         mWeightChart.setPaint(mInfoPaint,LineChart.PAINT_DESCRIPTION);
         */
-
+        mWeightChart.setNoDataText("");
         mWeightChart.setNoDataTextDescription("没有数据，长按添加记录");
 
     }
@@ -1970,49 +1983,15 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         weightUnit.setText(sport.getUnit());
         weight.setText("0");
 
-        int[] colors = new int[]{Color.rgb(255,0,0),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
+        int[] colors = new int[]{Color.rgb(103,58,185),Color.rgb(255,165,0),Color.rgb(255,255,0),Color.rgb(0,255,0),Color.rgb(0,0,255),Color.rgb(43,0,255),Color.rgb(87,0,255)};
         //加载体重、围度记录
         List<SportRecord> records = sportDbHelper.loadWeightRecordById(globalInfo.getUserid(),sport.getId());
         //如果没有数据的时候
         if(records.size()==0) {
-            /*
-            ArrayList<Entry> yVal = new ArrayList<Entry>();
-            ArrayList<String> xVals = new ArrayList<String>();
-
-            YAxis leftAxis = mWeightChart.getAxisLeft();
-            leftAxis.removeAllLimitLines();
-
-            ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
-
-            LineDataSet set = new LineDataSet(yVal, sport.getName());
-            //赛贝斯曲线
-            set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            //set.setDrawCircles(false);
-            set.setDrawValues(false);
-            set.setLabel("");
-
-            set.setAxisDependency(YAxis.AxisDependency.LEFT);
-            set.setColor(colors[0]);
-            set.setCircleColor(colors[0]);
-            set.setLineWidth(3f);
-            set.setCircleRadius(3f);
-
-            dataSets.add(set); // add the datasets
-
-            LineData data = new LineData(xVals, dataSets);
-            data.setValueTextColor(Color.WHITE);
-            data.setValueTextSize(9f);
-            */
-
             // set data
             mWeightChart.clear();
             mWeightChart.setData(null);
-
-            //mWeightChart.setVisibleXRangeMaximum(30);
-            //mWeightChart.moveViewToX(records.size());
-            //mWeightChart.setVisibleXRangeMinimum(20);
             mWeightChart.invalidate();
-
             return;
         }
 
@@ -2124,6 +2103,11 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightChart.moveViewToX(records.size());
         //mWeightChart.setVisibleXRangeMinimum(20);
         mWeightChart.invalidate();
+        int pointSize = yVal.size();
+        if(pointSize<5 || pointSize>30)
+            mWeightChart.animateX(500);
+        else
+            mWeightChart.animateX(1000);
     }
 
     @Override
@@ -2135,4 +2119,24 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     public void onNothingSelected() {
 
     }
+
+    private void showWeightDialog(final Sport sport){
+        float lastV;
+        lastV = sport.getLastValue();
+        Log.e(TAG, "lastV:"+lastV);
+        WeightPickerDialog dialog = new WeightPickerDialog(MainActivity.this, sport.getName(), sport.getMaxnum(),lastV, sport.getUnit(), new WeightPickerDialog.OnSelectListener() {
+            @Override
+            public void onSelect(float data,float data2) {
+                if(sportDbHelper==null)
+                    sportDbHelper=new SportDbHelper(MainActivity.this);
+                float result = data+data2;
+                Log.e(TAG, "data:"+data+", data2:"+data2+", result:"+result);
+                sport.setLastValue(result);
+                sportDbHelper.addSportRecord(sport.getId(), result, data2);
+            }
+        });
+        dialog.setEditable(false);
+        dialog.show();
+    }
 }
+

@@ -45,9 +45,6 @@ public class SportsActivity extends AppCompatActivity {
     private RecyclerViewStatusSupport mRecyclerView;
     private SportsAdapter mRecyclerViewAdapter;
 
-    private RecyclerView mWeightRecyclerView;
-    private WeightAdapter mWeightAdapter;
-
     private VolleyHelper volleyHelper = VolleyHelper.getInstance();
     private Intent intent;
     private SearchView searchView;
@@ -117,28 +114,6 @@ public class SportsActivity extends AppCompatActivity {
         mRecyclerView.showLoadingView();
         loadSports();
 
-        mWeightRecyclerView = (RecyclerView) findViewById(R.id.weight_list);
-        //用线性的方式显示listview
-        mLinearLayoutManager = new LinearLayoutManager(this);
-        mLinearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
-        mWeightRecyclerView.setLayoutManager(mLinearLayoutManager);
-
-        mWeightAdapter = new WeightAdapter(this);
-        mWeightRecyclerView.setAdapter(mWeightAdapter);
-
-        mWeightAdapter.setOnItemClickListener(new OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, final int position) {
-                Sport sport = mWeightAdapter.getItem(position);
-                //Toast.makeText(SportsActivity.this, sport.getName(), Toast.LENGTH_SHORT).show();
-                showDataDialog(sport);
-            }
-        });
-
-        loadWeight();
-
-
-
         onQueryTextListener = new OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -205,21 +180,6 @@ public class SportsActivity extends AppCompatActivity {
         }else {
             mRecyclerViewAdapter.notifyDataSetChanged();
         }
-    }
-
-    private void loadWeight(){
-        SQLiteDatabase db = DbHelper.getInstance(this).getDb();
-        Cursor cr = db.rawQuery("select * from t_sport where kind=3 order by `frequency` desc,`lasttime` desc,id", null);
-        //select name,frequency,lasttime from t_sport order by `frequency` desc,`lasttime` desc;
-        while (cr.moveToNext()){
-            Sport sport = new Sport(cr.getInt(0),cr.getString(1),cr.getString(2),cr.getInt(3),cr.getString(4),cr.getInt(5),cr.getString(6),cr.getInt(7),cr.getInt(8)
-            ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getInt(12)),cr.getInt(13),cr.getInt(14),cr.getInt(15));
-            mWeightAdapter.append(sport);
-        }
-        int count = cr.getColumnCount();
-        Log.e(TAG, "query db, chatgroup size:" + count);
-
-        mWeightAdapter.notifyDataSetChanged();
     }
 
     @Override

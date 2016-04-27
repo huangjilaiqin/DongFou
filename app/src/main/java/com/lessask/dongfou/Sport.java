@@ -24,6 +24,7 @@ public class Sport {
     int seq;
     float lastValue;
     float lastValue2;
+    int status;
     //db.execSQL("create table t_sport(id int primary key,name text not null,image text not null,type int not null,unit text not null,unit2 text null" +
      //       ",maxnum int not null,frequency int not null default 0,total real not null,avg real not null,days int not null,last_time int NOT NULL,seq int not null default 0)");
     public Sport(int id, String name, String image,int kind,String unit,int maxnum,String unit2,int maxnum2,int frequency
@@ -44,6 +45,14 @@ public class Sport {
         this.seq=seq;
         this.lastValue=lastValue;
         this.lastValue2=lastValue2;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
     }
 
     public float getLastValue() {

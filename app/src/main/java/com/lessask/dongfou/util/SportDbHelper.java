@@ -71,7 +71,7 @@ public class SportDbHelper {
         Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
         while (cr.moveToNext()) {
             sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
-                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getFloat(14), cr.getFloat(15));
         }
         cr.close();
         return sport;
@@ -83,7 +83,7 @@ public class SportDbHelper {
         Cursor cr = db.rawQuery("select * from t_sport where id=" + sportid, null);
         while (cr.moveToNext()) {
             sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
-                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getFloat(14), cr.getFloat(15));
         }
         cr.close();
         return sport;
@@ -123,7 +123,7 @@ public class SportDbHelper {
         Cursor cr = db.rawQuery("select * from t_sport where kind=3 and userid=" + userid, null);
         while (cr.moveToNext()) {
             sport = new Sport(cr.getInt(0), cr.getString(1), cr.getString(2), cr.getInt(3), cr.getString(4), cr.getInt(5), cr.getString(6), cr.getInt(7), cr.getInt(8)
-                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getInt(14), cr.getInt(15));
+                    , cr.getFloat(9), cr.getFloat(10), cr.getInt(11), new Date(cr.getLong(12)*1000), cr.getInt(13), cr.getFloat(14), cr.getFloat(15));
             sports.add(sport);
         }
         cr.close();

@@ -4,12 +4,16 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.ColorDrawable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
+import com.lessask.dongfou.LoginRegisterActivity;
 import com.lessask.dongfou.R;
+
+import java.awt.font.TextAttribute;
 
 
 /**
@@ -22,7 +26,6 @@ public class WeightPickerDialog extends AlertDialog implements DialogInterface.O
     private NumberPicker numberPicker2;
     private String title;
     private String[] values;
-    private float initValue;
     //整数部分初始值
     private int initZhengshuValue;
     //小数部分初始值
@@ -30,6 +33,7 @@ public class WeightPickerDialog extends AlertDialog implements DialogInterface.O
     private String unit;
     private String[] values2;
     private float initValue2;
+    private String TAG = WeightPickerDialog.class.getSimpleName();
 
 
     public void setEditable(boolean flag){
@@ -67,10 +71,15 @@ public class WeightPickerDialog extends AlertDialog implements DialogInterface.O
     public WeightPickerDialog(Context context, String title, int maxNumber, float initValue, String unit, OnSelectListener mSelectCallBack) {
         super(context);
         this.title = title;
-        this.initValue = initValue;
         if(initValue!=0) {
             this.initZhengshuValue = (int) initValue;
-            this.initXiaoshuValue = (int) ((initValue - initZhengshuValue) * 10);
+            float k = (initValue - this.initZhengshuValue);
+            float h = (initValue - this.initZhengshuValue)*10;
+            Log.e(TAG, "initValue:"+initValue+", this.initZhengshuValue:"+this.initZhengshuValue+", "+k+", "+h);
+            this.initXiaoshuValue = Math.round((initValue - this.initZhengshuValue) * 10);
+            this.initZhengshuValue--;
+            //this.initXiaoshuValue++;
+            Log.e(TAG, "initXiaoshuValue:"+this.initXiaoshuValue);
         }else {
             if(title.equals("体重"))
                 this.initZhengshuValue = 55;
@@ -107,8 +116,9 @@ public class WeightPickerDialog extends AlertDialog implements DialogInterface.O
         switch (which) {
             case BUTTON_POSITIVE:
                 if (mSelectCallBack != null) {
-                    float result = numberPicker.getValue()+1+(numberPicker2.getValue()+1)/10;
-                    mSelectCallBack.onSelect(result,0);
+                    float data1 = numberPicker.getValue()+1;
+                    float data2 = numberPicker2.getValue()/10f;
+                    mSelectCallBack.onSelect(data1,data2);
                 }
                 break;
             case BUTTON_NEGATIVE:
