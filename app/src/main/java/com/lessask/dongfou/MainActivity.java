@@ -1780,6 +1780,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         leftAxis.setSpaceTop(15f);
         leftAxis.setAxisMinValue(0f); // this replaces setStartAtZero(true)
 
+        mChart.setVisibleXRangeMaximum(30);
+        mChart.setVisibleXRangeMinimum(7);
+
 
         //对每种颜色的柱状图说明
         mChart.getLegend().setEnabled(false);
@@ -1847,8 +1850,10 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         mChart.setData(data);
         //mChart.setDrawValueAboveBar(false);
-        mChart.setVisibleXRangeMaximum(7);
+        mChart.setVisibleXRangeMaximum(30);
         mChart.setVisibleXRangeMinimum(7);
+        int pointSize = yVals1.size();
+        mWeightChart.setScaleMinima(pointSize/7,1);
         mChart.moveViewToX(sportRecords.size());
         mChart.animateY(1000);
         mChart.invalidate();
@@ -1862,11 +1867,10 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         mWeightChart.setDrawGridBackground(false);
         mWeightChart.setScaleEnabled(false);
+        mWeightChart.setScaleXEnabled(true);
         mWeightChart.setDescription("");
 
         //mWeightChart.setMaxVisibleValueCount(2);
-        mWeightChart.setVisibleXRangeMaximum(3);
-        mWeightChart.setVisibleXRangeMinimum(3);
 
         mWeightChart.getAxisRight().setEnabled(false);
         mWeightChart.setMarkerView(new MyMarkerView(MainActivity.this, R.layout.my_mark_view));
@@ -2099,10 +2103,13 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         leftAxis.addLimitLine(ll);
 
         mWeightChart.setVisibleXRangeMaximum(30);
-        mWeightChart.moveViewToX(records.size());
-        //mWeightChart.setVisibleXRangeMinimum(20);
+        mWeightChart.setVisibleXRangeMinimum(7);
+        //缩放到只显示7个数值
         mWeightChart.invalidate();
         int pointSize = yVal.size();
+        //mWeightChart.setScaleX(pointSize/7);
+        mWeightChart.setScaleMinima(pointSize/7,1);
+        mWeightChart.moveViewToX(records.size());
         if(pointSize<5 || pointSize>30)
             mWeightChart.animateX(500);
         else
