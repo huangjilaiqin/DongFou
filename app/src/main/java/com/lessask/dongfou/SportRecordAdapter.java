@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import com.lessask.dongfou.util.TimeHelper;
 
+import java.text.DecimalFormat;
 import java.util.Map;
 
 
@@ -71,6 +72,11 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
             detail.append(sport.getUnit2());
             detail.append("/");
             detail.append(sport.getUnit());
+        }else if(kind==3){
+            String unit = sport.getUnit();
+            String arg1 = new DecimalFormat("0.0").format(sportRecord.getArg1());
+            detail.append(arg1);
+            detail.append(unit);
         }
         holder.detail.setText(detail.toString());
         holder.time.setText(TimeHelper.date2Chat(sportRecord.getTime()));
@@ -87,6 +93,8 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
                 return false;
             }
         });
+        holder.downLine.setVisibility(View.VISIBLE);
+        holder.upLine.setVisibility(View.VISIBLE);
         if(position==getItemCount()-1)
             holder.downLine.setVisibility(View.INVISIBLE);
         else if(position==0)

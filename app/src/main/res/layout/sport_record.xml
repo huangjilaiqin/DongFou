@@ -61,7 +61,7 @@
         android:layout_marginLeft="8dp"
         android:layout_centerVertical="true"
         android:textSize="18sp"
-        android:textColor="@color/black"
+        android:textColor="@color/black_35"
         android:text="5公里"
         />
 

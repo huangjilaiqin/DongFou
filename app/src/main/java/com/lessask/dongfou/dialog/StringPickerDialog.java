@@ -28,7 +28,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
     private String[] values;
     private float initValue;
     private String unit;
-    private int currentValue;
+    private int currentIndex;
     private String TAG = StringPickerDialog.class.getSimpleName();
 
 
@@ -62,13 +62,13 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         numberPicker.setDisplayedValues(values);
         numberPicker.setMinValue(0);
         numberPicker.setMaxValue(values.length - 1);
-        numberPicker.setValue((int) (initValue - 1));
+        numberPicker.setValue(currentIndex);
         numberPicker.setDividerDrawable(new ColorDrawable(getContext().getResources().getColor(R.color.main_color)));
         numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
             @Override
             public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
                 Log.e(TAG, "old:" + oldVal + ", new:" + newVal);
-                currentValue = newVal;
+                currentIndex = newVal;
             }
         });
     }
@@ -81,7 +81,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         this.title = title;
         this.unit = unit;
         this.initValue=initValue;
-        currentValue = (int)initValue;
+        currentIndex = (int)initValue-1;
         this.mSelectCallBack = mSelectCallBack;
         init(context);
     }
@@ -92,7 +92,7 @@ public class StringPickerDialog extends AlertDialog implements DialogInterface.O
         switch (which) {
             case BUTTON_POSITIVE:
                 if (mSelectCallBack != null) {
-                    mSelectCallBack.onSelect(Integer.parseInt(values[currentValue]));
+                    mSelectCallBack.onSelect(Integer.parseInt(values[currentIndex]));
                 }
                 break;
             case BUTTON_NEGATIVE:

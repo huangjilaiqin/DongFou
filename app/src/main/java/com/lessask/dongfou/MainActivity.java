@@ -180,8 +180,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                     int deletePostion = msg.arg1;
                     sportRecord = (SportRecord)msg.obj;
                     mRecyclerViewAdapter.remove(deletePostion);
-                    mRecyclerViewAdapter.notifyItemRemoved(deletePostion);
-                    mRecyclerViewAdapter.notifyItemRangeChanged(deletePostion, mRecyclerViewAdapter.getItemCount());
+                    mRecyclerViewAdapter.notifyDataSetChanged();
+                    //mRecyclerViewAdapter.notifyItemRemoved(deletePostion);
+                    //mRecyclerViewAdapter.notifyItemRangeChanged(deletePostion, mRecyclerViewAdapter.getItemCount());
                     break;
                 case DELETE_SPORT_TONGJI:
                     sportRecord = (SportRecord)msg.obj;
@@ -439,11 +440,24 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 dataHeader.setVisibility(View.GONE);
                 weightDataHeader.setVisibility(View.VISIBLE);
                 weightDataHeader.invalidate();
+
+                //更新下面的列表
+                List<SportRecord> sportRecords = sportDbHelper.loadWeightRecord(globalInfo.getUserid());
+                mRecyclerViewAdapter.clear();
+                mRecyclerViewAdapter.appendToList(sportRecords);
+                mRecyclerViewAdapter.notifyDataSetChanged();
+
+
+
             }else if(currentPosition+1==sportNameData.size() && position+1<sportNameData.size()){
                 //上次是体重这次不是体重
                 weightDataHeader.setVisibility(View.GONE);
                 dataHeader.setVisibility(View.VISIBLE);
                 dataHeader.invalidate();
+                List<SportRecord> sportRecords = sportDbHelper.loadTodaySportRecord(globalInfo.getUserid());
+                mRecyclerViewAdapter.clear();
+                mRecyclerViewAdapter.appendToList(sportRecords);
+                mRecyclerViewAdapter.notifyDataSetChanged();
             }
             if(position+1==sportNameData.size()){
                 //体重数据设置
@@ -454,6 +468,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                     mWeightAdapter.notifyDataSetChanged();
                 }
                 setWeightChartData(weights.get(0));
+                mWeightAdapter.updateStatusByPosition(0);
+                mWeightAdapter.notifyDataSetChanged();
             }else {
                 //运动数据设置
                 setChartData(sportGathers.get(position));
@@ -529,6 +545,11 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                                         detail.append(sport.getUnit2());
                                         detail.append("/");
                                         detail.append(sport.getUnit());
+                                    }else if(kind==3){
+                                        String unit = sport.getUnit();
+                                        String arg1 = new DecimalFormat("0.0").format(sportRecord.getArg1());
+                                        detail.append(arg1);
+                                        detail.append(unit);
                                     }
                                     builder.setMessage("确认删除？" + sport.getName()+ ":"+detail.toString()+" 的记录");
                                     builder.setTitle("提示");
@@ -840,7 +861,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 values.put("days", sport.getDays());
                 values.put("lasttime", sport.getLastTime().getTime() / 1000);
                 values.put("seq", sport.getSeq());
-                Log.e(TAG, "update lastValue"+sport.getLastValue());
+                Log.e(TAG, "update lastValue" + sport.getLastValue());
                 values.put("lastvalue", sport.getLastValue());
                 DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values, "id=? and userid=?", new String[]{sport.getId() + "", "" + globalInfo.getUserid()});
 
@@ -849,6 +870,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 } else {
                     insertSportDay(sportRecord);
                 }
+
+                mRecyclerViewAdapter.appendToTop(sportRecord);
+                mRecyclerViewAdapter.notifyDataSetChanged();
 
                 Message message = new Message();
                 message.what = ADD_SPORT;
@@ -998,6 +1022,16 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     }
 
     private void updateFragmentsIfFirst(SportRecord sportRecord){
+
+        Sport sport = loadSport(sportRecord.getSportid());
+        if(sport.getKind()!=3){
+            setChartData(loadSportGatherFromDb(sportRecord.getSportid()));
+        }else {
+            setWeightChartData(sport);
+            mWeightAdapter.updateStatus(sportRecord.getSportid());
+            mWeightAdapter.notifyDataSetChanged();
+        }
+        /*
         int position=-1;
         for (int i=0;i<sportGathers.size();i++){
             SportGather sportGather = sportGathers.get(i);
@@ -1019,6 +1053,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             mFragmentDataPagerAdapter.setFragments(fragmentDatas);
             mFragmentDataPagerAdapter.notifyDataSetChanged();
         }
+        */
     }
 
     private void updateMenu(){
@@ -1754,7 +1789,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mChart.setPinchZoom(false);
 
         mChart.setDrawGridBackground(false);
-        mChart.setScaleEnabled(false);
         mChart.setDescription("");
 
         mChart.getAxisRight().setEnabled(false);
@@ -1850,11 +1884,14 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         mChart.setData(data);
         //mChart.setDrawValueAboveBar(false);
+
+        mChart.setScaleYEnabled(false);
         mChart.setVisibleXRangeMaximum(30);
         mChart.setVisibleXRangeMinimum(7);
         int pointSize = yVals1.size();
-        mWeightChart.setScaleMinima(pointSize/7,1);
+        mChart.setScaleMinima(pointSize / 7f, 1);
         mChart.moveViewToX(sportRecords.size());
+
         mChart.animateY(1000);
         mChart.invalidate();
     }
@@ -1866,8 +1903,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightChart.setPinchZoom(false);
 
         mWeightChart.setDrawGridBackground(false);
-        mWeightChart.setScaleEnabled(false);
-        mWeightChart.setScaleXEnabled(true);
+
         mWeightChart.setDescription("");
 
         //mWeightChart.setMaxVisibleValueCount(2);
@@ -1912,6 +1948,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         */
         mWeightChart.setNoDataText("");
         mWeightChart.setNoDataTextDescription("没有数据，长按添加记录");
+        mWeightChart.setScaleEnabled(false);
+        mWeightChart.setScaleXEnabled(true);
 
     }
 
@@ -1982,6 +2020,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
     private void setWeightChartData(Sport sport) {
         //加载体重数据
         //设置体重数据
+
         weightKind.setText(sport.getName());
         weightUnit.setText(sport.getUnit());
         weight.setText("0");
@@ -1998,31 +2037,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             return;
         }
 
-        Date minTime;
-        Date maxTime;
-        if(records.size()>0){
-            minTime = records.get(0).getTime();
-            maxTime = records.get(records.size()-1).getTime();
-        }else
-            minTime=maxTime=null;
-
-        /*
-        ArrayList<String> xVals = new ArrayList<String>();
-        Map<Long,Integer> time2pos = new HashMap<>();
-        int pos=0;
-        long minTimeNum = TimeHelper.getDateStartOfDay(minTime).getTime();
-        long maxTimeNum = TimeHelper.getDateStartOfDay(maxTime).getTime();
-        long timeNum = minTimeNum;
-        while(timeNum<=maxTimeNum){
-            time2pos.put(timeNum,pos);
-            xVals.add(TimeHelper.dateFormat(new Date(timeNum), "M/d"));
-            timeNum+=86400000;
-            pos++;
-        }
-        */
-
-        //int[] colors = new int[]{0xFF0000,0xFFA500,0xFFFF00,0x008000,0x0000FF,0x4B0082,0x800880};
-
         ArrayList<Entry> yVal = new ArrayList<Entry>();
         //各种类型的参考线
         //pos=0;
@@ -2031,7 +2045,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         for (int i=0;i<records.size();i++){
             SportRecord record = records.get(i);
             float amount = record.getAmount();
-            Log.e(TAG, "amount:"+amount);
+            //Log.e(TAG, "amount:"+amount);
             if(maxNum==0 || minNum==0)
                 minNum=maxNum=amount;
             if(amount>maxNum)
@@ -2102,18 +2116,20 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         // .. and more styling options
         leftAxis.addLimitLine(ll);
 
+        mWeightChart.invalidate();
+        //要在这里重新设置才会生效
+
         mWeightChart.setVisibleXRangeMaximum(30);
         mWeightChart.setVisibleXRangeMinimum(7);
         //缩放到只显示7个数值
-        mWeightChart.invalidate();
         int pointSize = yVal.size();
-        //mWeightChart.setScaleX(pointSize/7);
-        mWeightChart.setScaleMinima(pointSize/7,1);
+        mWeightChart.setScaleMinima(pointSize/7f,1);
+        //setScaleMinima 是设置最大放大的倍数的，放大后就不能缩放了
+        mWeightChart.setScaleEnabled(false);
+        mWeightChart.setScaleXEnabled(true);
         mWeightChart.moveViewToX(records.size());
-        if(pointSize<5 || pointSize>30)
-            mWeightChart.animateX(500);
-        else
-            mWeightChart.animateX(1000);
+
+        mWeightChart.animateX(1000);
     }
 
     @Override

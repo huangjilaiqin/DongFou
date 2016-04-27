@@ -35,15 +35,24 @@ public class WeightAdapter extends BaseRecyclerAdapter<Sport,WeightAdapter.ViewH
         this.onItemLongClickListener = onItemLongClickListener;
     }
 
-    public void updateStatus(int id){
+    public void updateStatus(int sportid){
         Iterator<Sport> iterator = getList().iterator();
         while (iterator.hasNext()){
             Sport sport = iterator.next();
-            if(sport.getId()==id)
+            if(sport.getId()==sportid)
                 sport.setStatus(1);
             else
                 sport.setStatus(0);
         }
+    }
+
+    public void updateStatusByPosition(int pos){
+        Iterator<Sport> iterator = getList().iterator();
+        while (iterator.hasNext()){
+            Sport sport = iterator.next();
+            sport.setStatus(0);
+        }
+        getList().get(pos).setStatus(1);
     }
 
     @Override
