@@ -436,44 +436,54 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
             //更换头部
             if(currentPosition+1<sportNameData.size() && position+1==sportNameData.size()){
-                //上次不是体重这次是体重
+                //运动数据->体重
+                if(weights==null || weights.size()==0) {
+                    weights = sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
+                    if(weights.size()==0){
+                        Toast.makeText(MainActivity.this, "请联网,重新打开App同步体重参数", Toast.LENGTH_SHORT).show();
+                        sportName.setSelection(currentPosition);
+                        sportName1.setSelection(currentPosition);
+                        return;
+                    }
+                    //设置体重和其它围度横向列表
+                    weights.get(0).setStatus(1);
+                    mWeightAdapter.appendToList(weights);
+                    mWeightAdapter.notifyDataSetChanged();
+                }
                 dataHeader.setVisibility(View.GONE);
                 weightDataHeader.setVisibility(View.VISIBLE);
-                weightDataHeader.invalidate();
+
+
+                //更新横向列表
+                mWeightAdapter.updateStatusByPosition(0);
+                mWeightAdapter.notifyDataSetChanged();
 
                 //更新下面的列表
                 List<SportRecord> sportRecords = sportDbHelper.loadWeightRecord(globalInfo.getUserid());
                 mRecyclerViewAdapter.clear();
                 mRecyclerViewAdapter.appendToList(sportRecords);
                 mRecyclerViewAdapter.notifyDataSetChanged();
-
-
-
             }else if(currentPosition+1==sportNameData.size() && position+1<sportNameData.size()){
-                //上次是体重这次不是体重
+                //体重->运动数据
                 weightDataHeader.setVisibility(View.GONE);
                 dataHeader.setVisibility(View.VISIBLE);
-                dataHeader.invalidate();
+
+
                 List<SportRecord> sportRecords = sportDbHelper.loadTodaySportRecord(globalInfo.getUserid());
                 mRecyclerViewAdapter.clear();
                 mRecyclerViewAdapter.appendToList(sportRecords);
                 mRecyclerViewAdapter.notifyDataSetChanged();
             }
-            if(position+1==sportNameData.size()){
-                //体重数据设置
-                if(weights==null) {
-                    weights = sportDbHelper.loadWeightFromDb(globalInfo.getUserid());
-                    weights.get(0).setStatus(1);
-                    mWeightAdapter.appendToList(weights);
-                    mWeightAdapter.notifyDataSetChanged();
-                }
+
+            //填充数据
+            if(currentPosition+1==sportNameData.size()){
                 setWeightChartData(weights.get(0));
-                mWeightAdapter.updateStatusByPosition(0);
-                mWeightAdapter.notifyDataSetChanged();
+                weightDataHeader.invalidate();
             }else {
-                //运动数据设置
                 setChartData(sportGathers.get(position));
+                dataHeader.invalidate();
             }
+
             currentPosition=position;
             sportName.setSelection(position);
             sportName1.setSelection(position);
