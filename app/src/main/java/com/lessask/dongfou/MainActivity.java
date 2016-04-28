@@ -475,8 +475,9 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 mRecyclerViewAdapter.notifyDataSetChanged();
             }
 
+            Log.e(TAG, "position:"+position);
             //填充数据
-            if(currentPosition+1==sportNameData.size()){
+            if(position==sportNameData.size()){
                 setWeightChartData(weights.get(0));
                 weightDataHeader.invalidate();
             }else {
@@ -1830,9 +1831,19 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         //对每种颜色的柱状图说明
         mChart.getLegend().setEnabled(false);
+        mChart.setNoDataText("");
+        mChart.setNoDataTextDescription("数据是用汗水浇筑而成的");
     }
 
     private void setChartData(SportGather sportGather) {
+        List<SportRecord> sportRecords = sportGather.getSportRecords();
+        if(sportRecords.size()==0) {
+            // set data
+            mChart.clear();
+            mChart.setData(null);
+            mChart.invalidate();
+            return;
+        }
         Sport sport = sportGather.getSport();
         String totalStr="XX";
         if(sport.getKind()==1) {
@@ -1845,7 +1856,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
         total.setText(totalStr);
 
-        List<SportRecord> sportRecords = sportGather.getSportRecords();
+
 
         ArrayList<String> xVals = new ArrayList<String>();
         ArrayList<BarEntry> yVals1 = new ArrayList<BarEntry>();
