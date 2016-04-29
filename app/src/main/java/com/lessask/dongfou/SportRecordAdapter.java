@@ -8,6 +8,7 @@ import android.app.Service;
 import android.content.Context;
 import android.os.Vibrator;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +26,7 @@ import java.util.Map;
  */
 public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRecordAdapter.ViewHolder>{
 
+    private String TAG = SportRecordAdapter.class.getSimpleName();
     private Context context;
     private Map<Integer, Sport> sportMap;
     private OnItemLongClickListener onItemLongClickListener;
@@ -74,6 +76,7 @@ public class SportRecordAdapter extends BaseRecyclerAdapter<SportRecord,SportRec
             detail.append(sport.getUnit());
         }else if(kind==3){
             String unit = sport.getUnit();
+            Log.e(TAG, "arg1:"+sportRecord.getArg1()+", "+sportRecord.getArg2());
             String arg1 = new DecimalFormat("0.0").format(sportRecord.getArg1());
             detail.append(arg1);
             detail.append(unit);

@@ -96,7 +96,7 @@ public class SportDbHelper {
         ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getFloat(3),cr.getFloat(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
             sportRecords.add(sportRecord);
         }
         cr.close();
@@ -109,7 +109,7 @@ public class SportDbHelper {
         // select r.* from t_sport as s inner join t_sport_record as r where s.kind=3 order by r.time desc
         ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getFloat(3),cr.getFloat(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
             sportRecords.add(sportRecord);
         }
         cr.close();
@@ -134,7 +134,7 @@ public class SportDbHelper {
         Cursor cr = db.rawQuery("select * from t_sport_record where userid=" + userid + " and sportid="+sportid+" order by time", null);
         ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getFloat(3),cr.getFloat(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
             sportRecords.add(sportRecord);
         }
         cr.close();
@@ -148,7 +148,7 @@ public class SportDbHelper {
         ArrayList<SportRecord> sportRecords=new ArrayList<>();
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
-            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            SportRecord sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getFloat(3),cr.getFloat(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
             sportRecords.add(sportRecord);
         }
         cr.close();
@@ -161,7 +161,7 @@ public class SportDbHelper {
         SportRecord sportRecord = null;
         while (cr.moveToNext()){
             //t_sport_record(id int primary key,sportid int not null,amount real not null,arg1 int not null default 0,arg2 int not null default 0,time int NOT NULL,seq int not null default 0)");
-            sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getInt(3),cr.getInt(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
+            sportRecord = new SportRecord(cr.getInt(0),cr.getInt(1),cr.getFloat(2),cr.getFloat(3),cr.getFloat(4),cr.getInt(6),new Date(cr.getLong(5)*1000),cr.getInt(7));
         }
         cr.close();
         return sportRecord;
