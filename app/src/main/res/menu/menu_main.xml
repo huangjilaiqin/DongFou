@@ -31,9 +31,11 @@
               android:orderInCategory="80"
               app:showAsAction="never"
               />
+        <!--
         <item android:id="@+id/test"
               android:title="测试"
               app:showAsAction="never"
               />
+              -->
     </group>
 </menu>

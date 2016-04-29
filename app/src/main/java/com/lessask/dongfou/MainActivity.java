@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                              @Override
                              public void onClick(DialogInterface dialog, int which) {
                                  dialog.dismiss();
-                                 Log.e(TAG, "url:"+url);
+                                 //Log.e(TAG, "url:"+url);
                                  Uri uri = Uri.parse(url);
                                  Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                                  startActivity(intent);
@@ -475,9 +475,8 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 mRecyclerViewAdapter.notifyDataSetChanged();
             }
 
-            Log.e(TAG, "position:"+position);
             //填充数据
-            if(position==sportNameData.size()){
+            if(position+1==sportNameData.size()){
                 setWeightChartData(weights.get(0));
                 weightDataHeader.invalidate();
             }else {
@@ -872,7 +871,6 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 values.put("days", sport.getDays());
                 values.put("lasttime", sport.getLastTime().getTime() / 1000);
                 values.put("seq", sport.getSeq());
-                Log.e(TAG, "update lastValue" + sport.getLastValue());
                 values.put("lastvalue", sport.getLastValue());
                 DbHelper.getInstance(MainActivity.this).getDb().update("t_sport", values, "id=? and userid=?", new String[]{sport.getId() + "", "" + globalInfo.getUserid()});
 
@@ -1023,7 +1021,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         for(i=0;i<minSize;i++){
             FragmentData fragmentData = (FragmentData) fragmentDatas.get(i);
             fragmentData.setSportGather(sportGathers.get(i));
-            Log.e(TAG, "total:"+sportGathers.get(i).getSport().getTotal());
+            //Log.e(TAG, "total:"+sportGathers.get(i).getSport().getTotal());
             fragmentData.update();
         }
 
@@ -1164,7 +1162,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
             ,cr.getFloat(9),cr.getFloat(10),cr.getInt(11),new Date(cr.getLong(12)*1000),cr.getInt(13),cr.getFloat(14),cr.getFloat(15));
             sportMap.put(sport.getId(), sport);
             sportGathers.add(new SportGather(sport, loadTodaySportRecordById(sport.getId())));
-            Log.e(TAG, "load sportid:" + sport.getId() + ", " + sport.getName() + ", " + sport.getTotal());
+            //Log.e(TAG, "load sportid:" + sport.getId() + ", " + sport.getName() + ", " + sport.getTotal());
         }
         cr.close();
     }
@@ -1218,7 +1216,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         for(int i=0;i<tmpSize;i++){
             SportRecord record = tmpRecords.get(i);
             timeNum = record.getTime().getTime();
-            Log.e(TAG, record.getTime().toString());
+            //Log.e(TAG, record.getTime().toString());
             records.add(record);
             if(i+1==tmpSize)
                 break;
@@ -1228,7 +1226,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 record = new SportRecord();
                 record.setAmount(0f);
                 record.setTime(new Date(timeNum+86400000*j));
-                Log.e(TAG, new Date(timeNum+86400000*j).toString());
+                //Log.e(TAG, new Date(timeNum+86400000*j).toString());
                 records.add(record);
             }
         }
@@ -1582,9 +1580,11 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                     logout();
                 }
                 break;
+            /*
             case R.id.test:
                 intent = new Intent(MainActivity.this, NewMainActivity.class);
                 startActivity(intent);
+                */
         }
         return super.onOptionsItemSelected(item);
     }
@@ -1628,7 +1628,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 }
                 @Override
                 public void onResponse(ResponseError response) {
-                    Log.e(TAG, "response:" + response.toString());
+                    //Log.e(TAG, "response:" + response.toString());
                     if(response.getError()!=null && response.getError()!="" || response.getErrno()!=0) {
                         Log.e(TAG, "onResponse error:" + response.getError() + ", " + response.getErrno());
 
@@ -1837,6 +1837,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
 
     private void setChartData(SportGather sportGather) {
         List<SportRecord> sportRecords = sportGather.getSportRecords();
+        Log.e(TAG, "record size:"+sportRecords.size());
         if(sportRecords.size()==0) {
             // set data
             mChart.clear();
@@ -1968,7 +1969,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
         mWeightChart.setPaint(mInfoPaint,LineChart.PAINT_DESCRIPTION);
         */
         mWeightChart.setNoDataText("");
-        mWeightChart.setNoDataTextDescription("没有数据，长按添加记录");
+        mWeightChart.setNoDataTextDescription("长按圆形按钮,添加记录");
         mWeightChart.setScaleEnabled(false);
         mWeightChart.setScaleXEnabled(true);
 
@@ -2173,7 +2174,7 @@ public class MainActivity extends AppCompatActivity implements OnChartValueSelec
                 if(sportDbHelper==null)
                     sportDbHelper=new SportDbHelper(MainActivity.this);
                 float result = data+data2;
-                Log.e(TAG, "data:"+data+", data2:"+data2+", result:"+result);
+                //Log.e(TAG, "data:"+data+", data2:"+data2+", result:"+result);
                 sport.setLastValue(result);
                 sportDbHelper.addSportRecord(sport.getId(), result, data2);
             }

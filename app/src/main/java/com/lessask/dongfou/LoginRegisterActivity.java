@@ -472,6 +472,8 @@ public class LoginRegisterActivity extends AppCompatActivity {
 
             //查询上一次的更新时间
             Sport sport = DbHelper.loadSportFromDb(getBaseContext(),sportRecord.getSportid());
+            if(sport==null)
+                return;
 
             sport.setDays(sport.getDays() + createNewDay);
 
